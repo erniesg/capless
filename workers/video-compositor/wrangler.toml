@@ -1,0 +1,40 @@
+name = "capless-video-compositor"
+main = "src/index.ts"
+compatibility_date = "2025-01-20"
+node_compat = true
+
+# Durable Objects for job state tracking
+[[durable_objects.bindings]]
+name = "RENDER_JOB_TRACKER"
+class_name = "RenderJobTracker"
+script_name = "capless-video-compositor"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RenderJobTracker"]
+
+# R2 Storage Binding
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "capless"
+preview_bucket_name = "capless-preview"
+
+# Environment Variables (secrets set via wrangler secret put)
+# MODAL_API_KEY - set via: wrangler secret put MODAL_API_KEY
+# TIKTOK_ACCESS_TOKEN - set via: wrangler secret put TIKTOK_ACCESS_TOKEN
+# INSTAGRAM_ACCESS_TOKEN - set via: wrangler secret put INSTAGRAM_ACCESS_TOKEN
+# YOUTUBE_API_KEY - set via: wrangler secret put YOUTUBE_API_KEY
+# UPSTASH_REDIS_REST_URL - set via: wrangler secret put UPSTASH_REDIS_REST_URL
+# UPSTASH_REDIS_REST_TOKEN - set via: wrangler secret put UPSTASH_REDIS_REST_TOKEN
+
+[vars]
+ENVIRONMENT = "production"
+MODAL_ENDPOINT = "https://api.modal.com/v1"
+MODAL_POLL_INTERVAL_MS = 10000
+MODAL_MAX_RETRIES = 3
+MODAL_TIMEOUT_MS = 300000
+R2_CLEANUP_DAYS = 7
+R2_PUBLIC_URL = "https://pub-capless.r2.dev"
+
+[dev]
+port = 8787

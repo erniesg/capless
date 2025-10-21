@@ -1,0 +1,27 @@
+{
+  "name": "capless-video-compositor",
+  "version": "1.0.0",
+  "description": "Video rendering, publishing, and storage management worker",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": ["cloudflare", "workers", "video", "modal", "rendering"],
+  "author": "Capless Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250110.0",
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6",
+    "wrangler": "^3.101.0"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  }
+}
