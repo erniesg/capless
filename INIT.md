@@ -1,8 +1,24 @@
 # INIT.md - Capless AI Initialization Guide
 
 **Last Updated:** 2025-10-21
-**Status:** Architecture Complete, Ready for Implementation
+**Status:** 3/10 Workers Built | 98/98 Tests Passing
 **Read This First** before touching anything else in this repo.
+
+---
+
+## ⚠️ Documentation Policy
+
+**DO NOT CREATE NEW MARKDOWN FILES.**
+
+We have exactly **5 MDs** - that's it:
+1. README.md - Quick start & status
+2. INIT.md - This file (concepts)
+3. ARCHITECTURE.md - Technical specs
+4. PERSONAS.md - Voice DNA
+5. IMPLEMENTATION.md - Build guide
+
+**If you need to document something:** Update one of these files.
+**Why?** Sprawl makes information impossible to find.
 
 ---
 
