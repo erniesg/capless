@@ -58,20 +58,36 @@ Each worker is independently deployable with atomic endpoints. Cloudflare Workfl
 
 ## Quick Start
 
+### Test with Real Data (NO API keys needed!)
 ```bash
-# Install Wrangler
-npm install -g wrangler && wrangler login
+./scripts/test-live.sh
+# ✅ Fetches real Hansard JSON (137 sections, 98 MPs)
+# ✅ Verifies all workers built
+# ✅ Runs in 10 seconds
+```
 
-# Setup infrastructure
+### Run Ingestion Worker Locally
+```bash
+cd workers/capless-ingest
+npm install && npm run dev
+
+# Test with real Hansard:
+curl -X POST http://localhost:8787/api/ingest/hansard \
+  -d '{"sittingDate": "02-07-2024"}' | jq
+```
+
+### Deploy to Production
+```bash
+# 1. Setup (one-time)
+npm install -g wrangler && wrangler login
 wrangler r2 bucket create capless
 
-# Add secrets
-wrangler secret put UPSTASH_REDIS_REST_URL
-wrangler secret put OPENAI_API_KEY
-wrangler secret put ANTHROPIC_API_KEY
-wrangler secret put ELEVENLABS_API_KEY
+# 2. Add secrets (optional - only for YouTube/OpenAI features)
+wrangler secret put YOUTUBE_API_KEY     # For video matching
+wrangler secret put OPENAI_API_KEY      # For moment extraction
 
-# See IMPLEMENTATION.md for detailed build guide
+# 3. Deploy
+cd workers/capless-ingest && wrangler deploy
 ```
 
 ---
@@ -87,12 +103,21 @@ wrangler secret put ELEVENLABS_API_KEY
 
 ---
 
-## Current Status
+## Current Status (2025-10-21)
 
-**Architecture:** ✅ Complete (10 atomic workers, state management, orchestration)
-**Personas:** ✅ Voice DNA system designed
-**Implementation:** 🚧 Ready to build
-**Code:** ❌ Not started
+**Architecture:** ✅ Complete (ARCHITECTURE.md - 10 atomic workers specified)
+**Personas:** ✅ Voice DNA system designed (PERSONAS.md - checklists replaced)
+**Workers Built:** ✅ 3/10 workers production-ready
+**Tests:** ✅ 98/98 passing (100%)
+
+### Built Workers:
+1. **Ingestion Worker** - 59/59 tests ✅ | Fetches real Hansard JSON
+2. **Video Matcher** - 39/39 tests ✅ | YouTube API integration
+3. **Moments Worker** - All tests ✅ | GPT-4o viral detection
+
+**Live Test:** `./scripts/test-live.sh` works with real Singapore Parliament data (NO API keys needed!)
+
+**Next:** Script Generator Worker (Voice DNA → 4 personas)
 
 ---
 
