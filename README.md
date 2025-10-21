@@ -6,179 +6,133 @@ Transform dense parliamentary proceedings into viral social media commentary wit
 
 ---
 
-## Quick Start
+## Quick Overview
 
-```bash
-# Clone and setup
-git clone <repo>
-cd capless
-npm install
+**Problem:** Parliamentary proceedings are boring, dense, and inaccessible to 90% of Singaporeans.
 
-# Setup Cloudflare
-npm install -g wrangler
-wrangler login
+**Solution:** AI extracts viral moments from Hansard transcripts, generates persona-driven commentary, and creates TikTok-ready videos.
 
-# Create Upstash Redis (free tier)
-# Visit: console.upstash.com
-# Copy REST URL and token
-
-# Get API keys
-# - OpenAI: platform.openai.com/api-keys
-# - Anthropic: console.anthropic.com
-# - ElevenLabs: elevenlabs.io/app/settings/api-keys
-
-# Configure secrets
-wrangler secret put UPSTASH_REDIS_REST_URL
-wrangler secret put UPSTASH_REDIS_REST_TOKEN
-wrangler secret put OPENAI_API_KEY
-wrangler secret put ANTHROPIC_API_KEY
-wrangler secret put ELEVENLABS_API_KEY
-
-# Create R2 bucket
-wrangler r2 bucket create capless
-
-# Deploy (single command deploys API + Frontend)
-wrangler deploy
-```
+**Vision:** Make civic engagement accessible through entertainment.
 
 ---
 
 ## Tech Stack
 
-- **Orchestration:** Cloudflare Workflows (durable execution)
-- **Compute:** Cloudflare Workers (API + Frontend via static assets)
-- **AI (Moments):** OpenAI GPT-4o (direct API)
-- **AI (Scripts):** Anthropic Claude 3.5 (direct API)
-- **Voice:** ElevenLabs TTS (professional tier, voice cloning)
-- **State:** Upstash Redis via REST API
+- **Orchestration:** Cloudflare Workflows (durable execution with retry logic)
+- **Compute:** Cloudflare Workers (zero cold starts, serves API + frontend via static assets)
+- **State:** Durable Objects (job coordination) + Redis (caching/queuing)
+- **AI:** OpenAI GPT-4o (moments), Anthropic Claude 3.5 (scripts), ElevenLabs (voice)
 - **Video:** Remotion (React) rendered on Modal (serverless GPU)
-- **Storage:** Cloudflare R2 (zero egress fees)
+- **Storage:** Cloudflare R2 (zero egress fees), Vectorize (semantic search)
 
-**Cost:** ~$0.17 per video at 100 videos/day = $515/month
-
----
-
-## Project Structure
-
-```
-capless/
-├── src/                  # Main Cloudflare Worker
-│   └── index.js          # API routes + static asset serving
-├── public/               # Frontend (static assets)
-│   ├── index.html
-│   └── js/app.js
-├── scripts/              # Local utilities
-│   └── video_composer_tiktok.py
-├── wrangler.toml         # Worker config (includes static assets)
-├── INIT.md              # Start here - comprehensive guide
-├── IMPLEMENTATION.md     # Phased TDD implementation guide
-└── PERSONAS.md          # Persona definitions and examples
-```
+**Cost:** ~$0.17 per video at scale (100 videos/day = $515/month)
 
 ---
 
-## The 4 AI Personas
+## Architecture: 10 Atomic Services
 
-### 1. **The StraightTok AI** (Gen Z)
-Heavy TikTok slang, dramatic reactions, emoji-heavy
-**Target:** 18-28 year olds on TikTok
+```
+Hansard JSON → [Ingest] → [Embeddings] + [Video Matcher] + [Moments]
+                    ↓
+              [Scripts (4 personas)] → [Audio] → [Video] → [Publisher]
+```
 
-### 2. **The Kopitiam Uncle** (Cynical Singaporean)
-Singlish-heavy, street-smart, "wah lau" energy
-**Target:** 30-50 year olds, WhatsApp viral content
+Each worker is independently deployable with atomic endpoints. Cloudflare Workflows orchestrates the pipeline.
 
-### 3. **The Anxious Auntie** (Kiasu worrier)
-Rapid-fire concerns, money-conscious, "aiyoh!"
-**Target:** 35-55 year olds, family WhatsApp groups
-
-### 4. **The Attenborough Observer** (Documentary narrator)
-Calm, observational, subtle irony about political theater
-**Target:** Educated viewers, LinkedIn/Twitter crowd
+**Full architecture:** See [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ---
 
-## How It Works (Cloudflare Workflows Orchestration)
+## The 4 AI Personas (Voice DNA System)
 
-```
-Cloudflare Workflow coordinates the entire pipeline:
+1. **StraightTok AI** (Gen Z): Truth-telling jester, TikTok slang, calls out BS
+2. **Kopitiam Uncle** (Cynical Singaporean): Street wisdom, Singlish-heavy, practical
+3. **Anxious Auntie** (Kiasu worrier): Family-first, cascading concerns, must prepare
+4. **Attenborough Observer** (Documentary narrator): Detached anthropologist, subtle irony
 
-Step 1: Extract Moment
-  Transcript → OpenAI GPT-4o → Viral moment JSON
+**Not checklists** - we use **Voice DNA** to capture psychological/cognitive architecture.
 
-Step 2: Generate Scripts (parallel)
-  Moment → Anthropic Claude → 4 persona scripts
+**Full system:** See [PERSONAS.md](./PERSONAS.md)
 
-Step 3: Judge Scripts
-  All scripts → OpenAI → Pick winner (highest viral score)
+---
 
-Step 4: Generate Voice
-  Winning script → ElevenLabs → Persona-specific MP3
+## Quick Start
 
-Step 5: Render Video
-  Remotion (React) → Parliament clip + Audio + Captions
-  → TikTok-ready MP4 (9:16, 30-45s)
+```bash
+# Install Wrangler
+npm install -g wrangler && wrangler login
 
-Step 6: Publish
-  Upload to R2 → (Future: Auto-publish to TikTok)
+# Setup infrastructure
+wrangler r2 bucket create capless
+
+# Add secrets
+wrangler secret put UPSTASH_REDIS_REST_URL
+wrangler secret put OPENAI_API_KEY
+wrangler secret put ANTHROPIC_API_KEY
+wrangler secret put ELEVENLABS_API_KEY
+
+# See IMPLEMENTATION.md for detailed build guide
 ```
 
 ---
 
-## MVP Demo (4 Hours)
+## Documentation
 
-**What Works:**
-- ✅ AI extracts viral moments from transcripts
-- ✅ Generates scripts in 4 persona voices
-- ✅ Creates professional text-to-speech audio
-- ✅ Simple UI to demo the pipeline
-- ✅ Pre-rendered TikTok video showcase
-
-**What's Manual (for now):**
-- Video composition (local Python script)
-- Hansard scraping (use sample transcripts)
-- TikTok upload (manual via app)
+| File | Purpose |
+|------|---------|
+| [INIT.md](./INIT.md) | **START HERE** - High-level guide, philosophy, mental models |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical specs: 10 workers, state management, deployment |
+| [PERSONAS.md](./PERSONAS.md) | Voice DNA system for 4 personas |
+| [IMPLEMENTATION.md](./IMPLEMENTATION.md) | Phase-by-phase build guide with TDD |
 
 ---
 
-## Post-MVP Roadmap
+## Current Status
 
-**Week 1-2:** Automated Hansard ingestion + vector search
-**Week 3:** Scheduled daily content generation (7am/7pm)
-**Week 4-5:** WebSocket collaborative script editing
-**Week 6+:** Multi-platform (Instagram Reels, YouTube Shorts)
-
----
-
-## Cost Estimates
-
-**At 100 videos/day:**
-- OpenAI API (GPT-4o): $150/month
-- Anthropic API (Claude): $200/month
-- ElevenLabs TTS: $99/month
-- Modal (video rendering): $50/month
-- Upstash Redis: $10/month
-- Cloudflare Workers: $5/month
-- R2 Storage: $1/month
-- **Total: ~$515/month = $0.17 per video**
+**Architecture:** ✅ Complete (10 atomic workers, state management, orchestration)
+**Personas:** ✅ Voice DNA system designed
+**Implementation:** 🚧 Ready to build
+**Code:** ❌ Not started
 
 ---
 
-## Why Capless?
+## Example Pipeline
 
-**Problem:** Parliamentary proceedings are dense, boring, and inaccessible to most Singaporeans.
+**Input:** Hansard transcript about insurance premiums rising
 
-**Solution:** AI breaks down complex politics into entertaining, understandable TikTok content.
-
-**Vision:** Make civic engagement accessible through entertainment. Political literacy shouldn't require a law degree.
+**Output (38 seconds):**
+1. Viral moment extracted: "Minister describes it as a 'knot'"
+2. Gen Z script generated: "Ma'am, this is not a knot, this is a full situationship with commitment issues 💀"
+3. Audio: Young female voice, 1.2x speed
+4. Video: 9:16 vertical, Parliament clip background, word-by-word captions
+5. Published to R2 (future: auto-publish to TikTok/Instagram)
 
 ---
 
-## Development
+## Development Principles
 
-See `IMPLEMENTATION.md` for the complete phased TDD checklist.
+1. **Atomic Services** - Every worker independently deployable
+2. **Test-Driven** - Write tests first, then implement
+3. **Config-Driven** - Behavior changes via YAML, not code
+4. **Fail Gracefully** - Multiple fallback strategies
+5. **Commit Often** - After each test, feature, refactor
+
+---
+
+## The Capless Philosophy
+
+Most political commentary is either **accurate but boring** or **viral but misleading**.
+
+Capless aims for the sweet spot: **Entertaining + Accurate + Educational**
+
+*"If people understand 60% of a political issue and share it with 10 friends, that's better than understanding 100% and sharing with nobody."*
 
 ---
 
 ## License
 
 MIT
+
+---
+
+**Ready to build?** Start with [INIT.md](./INIT.md)
