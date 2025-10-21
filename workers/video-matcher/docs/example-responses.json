@@ -1,0 +1,125 @@
+{
+  "video_match_response": {
+    "description": "Successful video match with high confidence",
+    "request": {
+      "transcript_id": "hansard-2024-07-02",
+      "sitting_date": "02-07-2024",
+      "speakers": ["Ms Rahayu Mahzam", "Mr Yip Hon Weng"]
+    },
+    "response": {
+      "video_id": "dQw4w9WgXcQ",
+      "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "title": "Parliament Sitting - 2 July 2024 | Healthcare Policy Discussion",
+      "duration": 9000,
+      "publish_date": "2024-07-02T10:00:00Z",
+      "confidence_score": 9.5,
+      "match_criteria": [
+        "date_match",
+        "title_keywords_match",
+        "duration_appropriate",
+        "is_livestream",
+        "description_keywords"
+      ],
+      "channel_id": "UCq9h3I2kQQCLb7snx_X8zSw",
+      "has_transcript": false,
+      "metadata": {
+        "description": "Singapore Parliament Session discussing Integrated Shield Plan premiums and healthcare costs. Featuring Ms Rahayu Mahzam, Minister of State for Health.",
+        "thumbnail_url": "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+        "view_count": 15420
+      },
+      "cached": false,
+      "from_storage": false
+    }
+  },
+  "video_match_cached": {
+    "description": "Video match retrieved from Redis cache",
+    "response": {
+      "video_id": "dQw4w9WgXcQ",
+      "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "title": "Parliament Sitting - 2 July 2024",
+      "duration": 9000,
+      "confidence_score": 9.5,
+      "cached": true
+    }
+  },
+  "timestamp_match_description": {
+    "description": "Timestamp found using video description markers",
+    "request": {
+      "video_id": "dQw4w9WgXcQ",
+      "quote_text": "consequences of a knot that insurers find themselves caught in",
+      "speaker": "Ms Rahayu Mahzam",
+      "approximate_time": "2:30 PM"
+    },
+    "response": {
+      "video_id": "dQw4w9WgXcQ",
+      "start_timestamp": 1234,
+      "end_timestamp": 1264,
+      "segment_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=1234s",
+      "confidence": 8,
+      "method": "description",
+      "matched_text": "Minister Rahayu discusses healthcare insurance"
+    }
+  },
+  "timestamp_match_approximate": {
+    "description": "Timestamp estimated from approximate time",
+    "request": {
+      "video_id": "dQw4w9WgXcQ",
+      "quote_text": "healthcare costs discussion",
+      "approximate_time": "2:30 PM"
+    },
+    "response": {
+      "video_id": "dQw4w9WgXcQ",
+      "start_timestamp": 3540,
+      "end_timestamp": 3600,
+      "segment_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3540s",
+      "confidence": 5,
+      "method": "approximate"
+    }
+  },
+  "error_no_match_found": {
+    "description": "No matching video found for the sitting date",
+    "request": {
+      "transcript_id": "hansard-2024-12-31",
+      "sitting_date": "31-12-2024"
+    },
+    "response": {
+      "error": "No matching video found",
+      "code": "NO_MATCH_FOUND",
+      "suggestion": "Try adjusting the sitting date or check if the video exists on YouTube"
+    },
+    "status": 404
+  },
+  "error_invalid_date_format": {
+    "description": "Invalid date format provided",
+    "request": {
+      "transcript_id": "hansard-2024-07-02",
+      "sitting_date": "2024-07-02"
+    },
+    "response": {
+      "error": "Invalid date format",
+      "expected": "DD-MM-YYYY",
+      "received": "2024-07-02"
+    },
+    "status": 400
+  },
+  "error_rate_limit": {
+    "description": "YouTube API rate limit exceeded",
+    "response": {
+      "error": "YouTube API quota exceeded",
+      "code": "RATE_LIMIT_ERROR",
+      "retry_after": "3600"
+    },
+    "status": 429
+  },
+  "error_missing_fields": {
+    "description": "Missing required fields in request",
+    "request": {
+      "sitting_date": "02-07-2024"
+    },
+    "response": {
+      "error": "Missing required fields",
+      "required": ["transcript_id", "sitting_date"]
+    },
+    "status": 400
+  }
+}
