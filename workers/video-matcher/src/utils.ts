@@ -14,6 +14,11 @@ export function parseSittingDate(dateString: string): {
   iso: string;
   formatted: string;
 } {
+  // Check for correct format with dashes
+  if (!dateString.includes('-')) {
+    throw new Error(`Invalid date format: ${dateString}. Expected DD-MM-YYYY`);
+  }
+
   const parts = dateString.split('-');
   if (parts.length !== 3) {
     throw new Error(`Invalid date format: ${dateString}. Expected DD-MM-YYYY`);
@@ -27,6 +32,13 @@ export function parseSittingDate(dateString: string): {
     throw new Error(`Invalid date components in: ${dateString}`);
   }
 
+  // Validate format: DD-MM-YYYY (not YYYY-MM-DD)
+  // If year appears in first position (year < 100 would mean it's in day/month position), it's wrong format
+  if (year < 100) {
+    throw new Error(`Invalid date format: ${dateString}. Expected DD-MM-YYYY`);
+  }
+
+  // Validate date component ranges
   if (day < 1 || day > 31 || month < 1 || month > 12 || year < 2000) {
     throw new Error(`Date out of valid range: ${dateString}`);
   }

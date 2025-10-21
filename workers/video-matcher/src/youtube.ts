@@ -116,10 +116,11 @@ export function calculateConfidenceScore(
   // Factor 1: Date match (4 points - most important)
   const parsed = parseSittingDate(sittingDate);
   const videoDate = new Date(video.publishedAt);
-  const sittingDateObj = new Date(parsed.year, parsed.month - 1, parsed.day);
+  // Use UTC to avoid timezone issues
+  const sittingDateObj = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day));
 
   const daysDifference = Math.abs(
-    (videoDate.getTime() - sittingDateObj.getTime()) / (1000 * 60 * 60 * 24)
+    Math.floor((videoDate.getTime() - sittingDateObj.getTime()) / (1000 * 60 * 60 * 24))
   );
 
   if (daysDifference === 0) {
@@ -128,8 +129,9 @@ export function calculateConfidenceScore(
   } else if (daysDifference <= 1) {
     factors.date_match = true;
     score += 3; // Within 1 day
-  } else if (daysDifference <= 3) {
-    score += 1; // Within 3 days (might be uploaded later)
+  } else if (daysDifference <= 2) {
+    factors.date_match = true;  // Also mark true for 2 days
+    score += 1; // Within 2 days (might be uploaded later)
   }
 
   // Factor 2: Title contains parliamentary keywords (2 points)
