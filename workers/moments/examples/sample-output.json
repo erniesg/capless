@@ -1,0 +1,116 @@
+{
+  "transcript_id": "transcript-2025-01-15-healthcare",
+  "moments": [
+    {
+      "moment_id": "moment-1737000000-abc123def",
+      "quote": "The premium increases will be offset by the enhanced subsidy calibration mechanism, the inter-generational risk-pooling optimization framework, and the progressive premium adjustment modalities that we have carefully calibrated to ensure equitable burden distribution across the demographic spectrum.",
+      "speaker": "Minister Ong Boon Huat",
+      "timestamp_start": "14:25:15",
+      "timestamp_end": "14:26:10",
+      "context_before": "Mr Chen Wei Ming: With respect Minister, I understand the need for sustainability, but we're talking about premium increases of 20-35% for some age groups. Many families are already struggling with the rising cost of living, HDB conservancy charges, and GST increases. How do you expect them to absorb this additional burden?",
+      "context_after": "Mr Chen Wei Ming: Minister, I apologize, but that sounds like a lot of bureaucratic jargon. My constituents don't understand 'inter-generational risk-pooling optimization framework'. Can you explain in plain language what this actually means for a family earning $4,000 a month?",
+      "virality_score": 9.2,
+      "why_viral": "Peak bureaucratic doublespeak - uses dense jargon to obscure a simple concept about subsidies. Perfectly illustrates how government officials overcomplicate answers to avoid addressing the real concern about affordability.",
+      "topic": "Healthcare",
+      "emotional_tone": "defensive",
+      "target_demographic": "working class",
+      "section_title": "Healthcare Premium Adjustments",
+      "transcript_id": "transcript-2025-01-15-healthcare",
+      "segment_ids": ["seg-004"],
+      "created_at": "2025-01-21T10:30:00Z"
+    },
+    {
+      "moment_id": "moment-1737000001-xyz789ghi",
+      "quote": "The increases are modest when you factor in the comprehensive coverage enhancement package that we are providing.",
+      "speaker": "Minister Ong Boon Huat",
+      "timestamp_start": "14:27:50",
+      "timestamp_end": "14:28:40",
+      "context_before": "Mr Chen Wei Ming: Thank you for clarifying. But Minister, you said the increases are 'modest' in your earlier statement, yet now you're talking about premium increases of up to 35%. How can that be considered modest?",
+      "context_after": "Ms Lim Hui Fen: Madam Speaker, supplementary question. The Minister mentions enhanced coverage, but from what I understand, the coverage enhancements were already approved and announced last year. Are we now being asked to pay more for coverage that was already promised?",
+      "virality_score": 8.7,
+      "why_viral": "Clear contradiction - calls 35% premium increase 'modest'. Demonstrates disconnect between government officials and everyday Singaporeans. Quote is highly shareable because of the logical inconsistency.",
+      "topic": "Healthcare",
+      "emotional_tone": "evasive",
+      "target_demographic": "Gen Z",
+      "section_title": "Healthcare Premium Adjustments",
+      "transcript_id": "transcript-2025-01-15-healthcare",
+      "segment_ids": ["seg-008"],
+      "created_at": "2025-01-21T10:30:00Z"
+    },
+    {
+      "moment_id": "moment-1737000002-mno456pqr",
+      "quote": "We're paying 35% more for coverage we were already promised, and this is because of medical inflation. But the premium increase of 35% far exceeds the medical inflation rate of 8-10%. Can you explain this gap?",
+      "speaker": "Ms Lim Hui Fen",
+      "timestamp_start": "14:30:00",
+      "timestamp_end": "14:30:40",
+      "context_before": "Minister Ong Boon Huat: That is a separate matter. The coverage enhancements were indeed announced previously, and those are being implemented. The premium adjustments are necessary due to medical cost inflation and increased utilization rates. These are two parallel but related policy implementations.",
+      "context_after": "Minister Ong Boon Huat: The actuarial calculations take into account not just current medical inflation but projected future costs over the next 5-10 years. We need to ensure that the scheme remains solvent and can meet all claims. This is responsible financial stewardship.",
+      "virality_score": 8.5,
+      "why_viral": "Sharp questioning that exposes illogical math - 35% increase to cover 8-10% inflation doesn't add up. Resonates with Singaporeans who feel they're being overcharged. Great soundbite for TikTok calling out government logic.",
+      "topic": "Healthcare",
+      "emotional_tone": "skeptical",
+      "target_demographic": "working class",
+      "section_title": "Healthcare Premium Adjustments",
+      "transcript_id": "transcript-2025-01-15-healthcare",
+      "segment_ids": ["seg-011"],
+      "created_at": "2025-01-21T10:30:00Z"
+    },
+    {
+      "moment_id": "moment-1737000003-stu123vwx",
+      "quote": "My constituents don't understand 'inter-generational risk-pooling optimization framework'. Can you explain in plain language what this actually means for a family earning $4,000 a month?",
+      "speaker": "Mr Chen Wei Ming",
+      "timestamp_start": "14:26:10",
+      "timestamp_end": "14:26:45",
+      "context_before": "Minister Ong Boon Huat: I understand the concern, and that is precisely why we have put in place a comprehensive support framework. The premium increases will be offset by the enhanced subsidy calibration mechanism, the inter-generational risk-pooling optimization framework, and the progressive premium adjustment modalities that we have carefully calibrated to ensure equitable burden distribution across the demographic spectrum.",
+      "context_after": "Minister Ong Boon Huat: Certainly. What I mean is that we are spreading the healthcare costs across different age groups so that younger Singaporeans help to support the elderly, while the elderly benefit from subsidies. This keeps the premiums more affordable for everyone.",
+      "virality_score": 7.8,
+      "why_viral": "MP calling out bureaucratic jargon on behalf of constituents. Relatable moment where an official asks for plain language. Shows the gap between government speak and everyday Singaporeans.",
+      "topic": "Healthcare",
+      "emotional_tone": "frustrated",
+      "target_demographic": "working class",
+      "section_title": "Healthcare Premium Adjustments",
+      "transcript_id": "transcript-2025-01-15-healthcare",
+      "segment_ids": ["seg-005"],
+      "created_at": "2025-01-21T10:30:00Z"
+    }
+  ],
+  "top_moment": {
+    "moment_id": "moment-1737000000-abc123def",
+    "quote": "The premium increases will be offset by the enhanced subsidy calibration mechanism, the inter-generational risk-pooling optimization framework, and the progressive premium adjustment modalities that we have carefully calibrated to ensure equitable burden distribution across the demographic spectrum.",
+    "speaker": "Minister Ong Boon Huat",
+    "timestamp_start": "14:25:15",
+    "timestamp_end": "14:26:10",
+    "context_before": "Mr Chen Wei Ming: With respect Minister, I understand the need for sustainability, but we're talking about premium increases of 20-35% for some age groups. Many families are already struggling with the rising cost of living, HDB conservancy charges, and GST increases. How do you expect them to absorb this additional burden?",
+    "context_after": "Mr Chen Wei Ming: Minister, I apologize, but that sounds like a lot of bureaucratic jargon. My constituents don't understand 'inter-generational risk-pooling optimization framework'. Can you explain in plain language what this actually means for a family earning $4,000 a month?",
+    "virality_score": 9.2,
+    "why_viral": "Peak bureaucratic doublespeak - uses dense jargon to obscure a simple concept about subsidies. Perfectly illustrates how government officials overcomplicate answers to avoid addressing the real concern about affordability.",
+    "topic": "Healthcare",
+    "emotional_tone": "defensive",
+    "target_demographic": "working class",
+    "section_title": "Healthcare Premium Adjustments",
+    "transcript_id": "transcript-2025-01-15-healthcare",
+    "segment_ids": ["seg-004"],
+    "created_at": "2025-01-21T10:30:00Z"
+  },
+  "statistics": {
+    "total_segments_analyzed": 12,
+    "moments_found": 4,
+    "avg_virality_score": 8.55,
+    "topics": {
+      "Healthcare": 4
+    },
+    "speakers": {
+      "Minister Ong Boon Huat": 2,
+      "Ms Lim Hui Fen": 1,
+      "Mr Chen Wei Ming": 1
+    },
+    "emotional_tones": {
+      "defensive": 1,
+      "evasive": 1,
+      "skeptical": 1,
+      "frustrated": 1
+    }
+  },
+  "processed_at": "2025-01-21T10:30:00Z",
+  "model_used": "gpt-4o"
+}

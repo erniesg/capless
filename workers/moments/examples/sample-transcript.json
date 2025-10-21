@@ -1,0 +1,121 @@
+{
+  "transcript_id": "transcript-2025-01-15-healthcare",
+  "session_id": "session-2025-01",
+  "date": "2025-01-15",
+  "title": "Healthcare Premium Debate - MediShield Life Adjustments",
+  "segments": [
+    {
+      "segment_id": "seg-001",
+      "speaker": "Mr Chen Wei Ming",
+      "text": "Madam Speaker, I would like to ask the Minister for Health about the recent announcement of MediShield Life premium increases. Many of my constituents, particularly elderly residents and young families, have expressed deep concern about the affordability of these increases.",
+      "timestamp_start": "14:23:00",
+      "timestamp_end": "14:23:45",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 0
+    },
+    {
+      "segment_id": "seg-002",
+      "speaker": "Minister Ong Boon Huat",
+      "text": "Thank you for the question. Let me be clear - the premium adjustments are necessary to ensure the long-term sustainability and actuarial soundness of the MediShield Life scheme. We have conducted extensive actuarial analysis and consulted with international experts.",
+      "timestamp_start": "14:23:45",
+      "timestamp_end": "14:24:30",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 1
+    },
+    {
+      "segment_id": "seg-003",
+      "speaker": "Mr Chen Wei Ming",
+      "text": "With respect Minister, I understand the need for sustainability, but we're talking about premium increases of 20-35% for some age groups. Many families are already struggling with the rising cost of living, HDB conservancy charges, and GST increases. How do you expect them to absorb this additional burden?",
+      "timestamp_start": "14:24:30",
+      "timestamp_end": "14:25:15",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 2
+    },
+    {
+      "segment_id": "seg-004",
+      "speaker": "Minister Ong Boon Huat",
+      "text": "I understand the concern, and that is precisely why we have put in place a comprehensive support framework. The premium increases will be offset by the enhanced subsidy calibration mechanism, the inter-generational risk-pooling optimization framework, and the progressive premium adjustment modalities that we have carefully calibrated to ensure equitable burden distribution across the demographic spectrum.",
+      "timestamp_start": "14:25:15",
+      "timestamp_end": "14:26:10",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 3
+    },
+    {
+      "segment_id": "seg-005",
+      "speaker": "Mr Chen Wei Ming",
+      "text": "Minister, I apologize, but that sounds like a lot of bureaucratic jargon. My constituents don't understand 'inter-generational risk-pooling optimization framework'. Can you explain in plain language what this actually means for a family earning $4,000 a month?",
+      "timestamp_start": "14:26:10",
+      "timestamp_end": "14:26:45",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 4
+    },
+    {
+      "segment_id": "seg-006",
+      "speaker": "Minister Ong Boon Huat",
+      "text": "Certainly. What I mean is that we are spreading the healthcare costs across different age groups so that younger Singaporeans help to support the elderly, while the elderly benefit from subsidies. This keeps the premiums more affordable for everyone.",
+      "timestamp_start": "14:26:45",
+      "timestamp_end": "14:27:20",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 5
+    },
+    {
+      "segment_id": "seg-007",
+      "speaker": "Mr Chen Wei Ming",
+      "text": "Thank you for clarifying. But Minister, you said the increases are 'modest' in your earlier statement, yet now you're talking about premium increases of up to 35%. How can that be considered modest?",
+      "timestamp_start": "14:27:20",
+      "timestamp_end": "14:27:50",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 6
+    },
+    {
+      "segment_id": "seg-008",
+      "speaker": "Minister Ong Boon Huat",
+      "text": "The increases are modest when you factor in the comprehensive coverage enhancement package that we are providing. Singaporeans will now be covered for a wider range of treatments, including advanced cancer therapies and chronic disease management. When you look at the total value proposition, the increases are actually quite reasonable.",
+      "timestamp_start": "14:27:50",
+      "timestamp_end": "14:28:40",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 7
+    },
+    {
+      "segment_id": "seg-009",
+      "speaker": "Ms Lim Hui Fen",
+      "text": "Madam Speaker, supplementary question. The Minister mentions enhanced coverage, but from what I understand, the coverage enhancements were already approved and announced last year. Are we now being asked to pay more for coverage that was already promised?",
+      "timestamp_start": "14:28:40",
+      "timestamp_end": "14:29:20",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 8
+    },
+    {
+      "segment_id": "seg-010",
+      "speaker": "Minister Ong Boon Huat",
+      "text": "That is a separate matter. The coverage enhancements were indeed announced previously, and those are being implemented. The premium adjustments are necessary due to medical cost inflation and increased utilization rates. These are two parallel but related policy implementations.",
+      "timestamp_start": "14:29:20",
+      "timestamp_end": "14:30:00",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 9
+    },
+    {
+      "segment_id": "seg-011",
+      "speaker": "Ms Lim Hui Fen",
+      "text": "So to be clear, Minister - we're paying 35% more for coverage we were already promised, and this is because of medical inflation. But the premium increase of 35% far exceeds the medical inflation rate of 8-10%. Can you explain this gap?",
+      "timestamp_start": "14:30:00",
+      "timestamp_end": "14:30:40",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 10
+    },
+    {
+      "segment_id": "seg-012",
+      "speaker": "Minister Ong Boon Huat",
+      "text": "The actuarial calculations take into account not just current medical inflation but projected future costs over the next 5-10 years. We need to ensure that the scheme remains solvent and can meet all claims. This is responsible financial stewardship.",
+      "timestamp_start": "14:30:40",
+      "timestamp_end": "14:31:20",
+      "section_title": "Healthcare Premium Adjustments",
+      "order": 11
+    }
+  ],
+  "metadata": {
+    "speakers": ["Mr Chen Wei Ming", "Minister Ong Boon Huat", "Ms Lim Hui Fen"],
+    "topics": ["Healthcare", "Insurance", "MediShield Life", "Cost of Living"],
+    "total_segments": 12
+  }
+}
