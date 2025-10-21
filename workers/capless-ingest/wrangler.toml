@@ -1,0 +1,57 @@
+# Cloudflare Worker Configuration for Capless Ingestion Service
+
+name = "capless-ingest"
+main = "src/index.ts"
+compatibility_date = "2025-01-20"
+
+# Account ID (replace with your Cloudflare account ID)
+# account_id = "your-account-id"
+
+# Workers configuration
+workers_dev = true
+
+# R2 Bucket bindings
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "capless"
+preview_bucket_name = "capless-dev"
+
+# KV Namespace bindings (for Redis-like caching)
+[[kv_namespaces]]
+binding = "REDIS"
+id = "your-kv-namespace-id"
+preview_id = "your-kv-preview-namespace-id"
+
+# Environment variables
+[vars]
+PARLIAMENT_API_BASE_URL = "https://sprs.parl.gov.sg/search"
+CACHE_TTL_SECONDS = "86400"  # 24 hours
+MAX_RETRIES = "3"
+RETRY_DELAY_MS = "1000"
+
+# Development environment overrides
+[env.dev]
+name = "capless-ingest-dev"
+
+[env.dev.vars]
+CACHE_TTL_SECONDS = "3600"  # 1 hour for dev
+
+# Production environment
+[env.production]
+name = "capless-ingest-prod"
+workers_dev = false
+
+[env.production.vars]
+CACHE_TTL_SECONDS = "86400"  # 24 hours
+
+# Build configuration
+[build]
+command = "npm run build"
+
+# Observability
+[observability]
+enabled = true
+
+# Limits
+[limits]
+cpu_ms = 30000  # 30 seconds max CPU time

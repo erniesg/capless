@@ -1,0 +1,132 @@
+{
+  "transcript_id": "2024-07-02-p14-s3",
+  "sitting_date": "2024-07-02",
+  "date_display": "Tuesday, 2 July 2024",
+  "speakers": [
+    "Mr Leong Mun Wai",
+    "The Minister for National Development (Mr Desmond Lee)",
+    "Mr Desmond Lee",
+    "The Prime Minister (Mr Lawrence Wong)",
+    "Mr Speaker",
+    "Ms Tin Pei Ling"
+  ],
+  "topics": [
+    "Oral Answers to Questions",
+    "Ministerial Statements"
+  ],
+  "segments": [
+    {
+      "id": "2024-07-02-p14-s3-0",
+      "speaker": "Mr Leong Mun Wai",
+      "text": "To ask the Minister for National Development whether the Government will consider (i) imposing a cooling-off period before resale flat owners can purchase a second subsidised public housing flat; and (ii) imposing a resale levy on resale flat buyers to ensure equity between resale and Build-To-Order (BTO) flat buyers.",
+      "timestamp": "1.30 pm",
+      "section_title": "Oral Answers to Questions",
+      "section_type": "OA",
+      "page_number": 1,
+      "segment_index": 0,
+      "word_count": 52,
+      "char_count": 339
+    },
+    {
+      "id": "2024-07-02-p14-s3-1",
+      "speaker": "The Minister for National Development (Mr Desmond Lee)",
+      "text": "Mr Speaker, the majority of Singaporeans live in HDB flats. This reflects our commitment to keeping public housing affordable and accessible. We have comprehensive measures in place to ensure fair and equitable access.",
+      "timestamp": "1.30 pm",
+      "section_title": "Oral Answers to Questions",
+      "section_type": "OA",
+      "page_number": 1,
+      "segment_index": 1,
+      "word_count": 39,
+      "char_count": 244
+    },
+    {
+      "id": "2024-07-02-p14-s3-2",
+      "speaker": "Mr Leong Mun Wai",
+      "text": "Sir, I thank the Minister for his answer but I would like to ask a supplementary question. Given that we have seen property prices rising significantly over the past few years, does the Minister not think that more needs to be done to ensure that first-time buyers are not disadvantaged?",
+      "timestamp": "1.32 pm",
+      "section_title": "Oral Answers to Questions",
+      "section_type": "OA",
+      "page_number": 1,
+      "segment_index": 2,
+      "word_count": 58,
+      "char_count": 336
+    },
+    {
+      "id": "2024-07-02-p14-s3-3",
+      "speaker": "Mr Desmond Lee",
+      "text": "Mr Speaker, I thank the Member for his supplementary question. The Government takes the issue of housing affordability very seriously. We continuously monitor market conditions and adjust our policies accordingly.",
+      "timestamp": "1.32 pm",
+      "section_title": "Oral Answers to Questions",
+      "section_type": "OA",
+      "page_number": 1,
+      "segment_index": 3,
+      "word_count": 36,
+      "char_count": 234
+    },
+    {
+      "id": "2024-07-02-p14-s3-4",
+      "speaker": "The Prime Minister (Mr Lawrence Wong)",
+      "text": "Mr Speaker, I rise to make a statement on Singapore's economic strategy for the next decade. As we navigate an increasingly complex global landscape, we must remain adaptable while staying true to our core principles.",
+      "timestamp": "1.45 pm",
+      "section_title": "Ministerial Statements",
+      "section_type": "OS",
+      "page_number": 5,
+      "segment_index": 4,
+      "word_count": 44,
+      "char_count": 270
+    },
+    {
+      "id": "2024-07-02-p14-s3-5",
+      "speaker": "Mr Speaker",
+      "text": "Thank you, Prime Minister. We will now open the floor for questions on the Ministerial Statement.",
+      "timestamp": "1.45 pm",
+      "section_title": "Ministerial Statements",
+      "section_type": "OS",
+      "page_number": 5,
+      "segment_index": 5,
+      "word_count": 17,
+      "char_count": 106
+    },
+    {
+      "id": "2024-07-02-p14-s3-6",
+      "speaker": "Ms Tin Pei Ling",
+      "text": "Mr Speaker, I thank the Prime Minister for his comprehensive statement. May I ask what specific measures are being taken to support our SMEs during this transition period?",
+      "timestamp": "1.50 pm",
+      "section_title": "Ministerial Statements",
+      "section_type": "OS",
+      "page_number": 5,
+      "segment_index": 6,
+      "word_count": 33,
+      "char_count": 192
+    },
+    {
+      "id": "2024-07-02-p14-s3-7",
+      "speaker": "The Prime Minister",
+      "text": "Mr Speaker, I thank the Member for her question. Supporting our SMEs is indeed a critical priority. We have rolled out several initiatives including enhanced grants and digital transformation support.",
+      "timestamp": "1.50 pm",
+      "section_title": "Ministerial Statements",
+      "section_type": "OS",
+      "page_number": 5,
+      "segment_index": 7,
+      "word_count": 36,
+      "char_count": 225
+    }
+  ],
+  "metadata": {
+    "parliament_no": 14,
+    "session_no": 3,
+    "volume_no": 102,
+    "start_time": "1:30 pm",
+    "speaker_of_parliament": "Mr Speaker",
+    "attendance": [
+      "Mr Leong Mun Wai",
+      "Mr Desmond Lee",
+      "Mr Lawrence Wong",
+      "Ms Tin Pei Ling"
+    ],
+    "total_segments": 8,
+    "total_words": 315,
+    "processing_timestamp": "2025-10-21T12:00:00.000Z",
+    "source_url": "https://sprs.parl.gov.sg/search/getHansardReport/?sittingDate=02-07-2024"
+  }
+}

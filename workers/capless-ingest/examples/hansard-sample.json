@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "parlimentNO": 14,
+    "sessionNO": 3,
+    "volumeNO": 102,
+    "sittingDate": "02-07-2024",
+    "dateToDisplay": "Tuesday, 2 July 2024",
+    "startTimeStr": "1:30 pm",
+    "speaker": "Mr Speaker"
+  },
+  "takesSectionVOList": [
+    {
+      "startPgNo": 1,
+      "title": "Oral Answers to Questions",
+      "sectionType": "OA",
+      "questionCount": 3,
+      "content": "<h6>1.30 pm</h6><p><strong>Mr Leong Mun Wai</strong>: To ask the Minister for National Development whether the Government will consider (i) imposing a cooling-off period before resale flat owners can purchase a second subsidised public housing flat; and (ii) imposing a resale levy on resale flat buyers to ensure equity between resale and Build-To-Order (BTO) flat buyers.</p><p><strong>The Minister for National Development (Mr Desmond Lee)</strong>: Mr Speaker, the majority of Singaporeans live in HDB flats. This reflects our commitment to keeping public housing affordable and accessible. We have comprehensive measures in place to ensure fair and equitable access.</p><h6>1.32 pm</h6><p><strong>Mr Leong Mun Wai</strong>: Sir, I thank the Minister for his answer but I would like to ask a supplementary question. Given that we have seen property prices rising significantly over the past few years, does the Minister not think that more needs to be done to ensure that first-time buyers are not disadvantaged?</p><p><strong>Mr Desmond Lee</strong>: Mr Speaker, I thank the Member for his supplementary question. The Government takes the issue of housing affordability very seriously. We continuously monitor market conditions and adjust our policies accordingly.</p>"
+    },
+    {
+      "startPgNo": 5,
+      "title": "Ministerial Statements",
+      "sectionType": "OS",
+      "questionCount": 0,
+      "content": "<h6>1.45 pm</h6><p><strong>The Prime Minister (Mr Lawrence Wong)</strong>: Mr Speaker, I rise to make a statement on Singapore's economic strategy for the next decade. As we navigate an increasingly complex global landscape, we must remain adaptable while staying true to our core principles.</p><p><strong>Mr Speaker</strong>: Thank you, Prime Minister. We will now open the floor for questions on the Ministerial Statement.</p><h6>1.50 pm</h6><p><strong>Ms Tin Pei Ling</strong>: Mr Speaker, I thank the Prime Minister for his comprehensive statement. May I ask what specific measures are being taken to support our SMEs during this transition period?</p><p><strong>The Prime Minister</strong>: Mr Speaker, I thank the Member for her question. Supporting our SMEs is indeed a critical priority. We have rolled out several initiatives including enhanced grants and digital transformation support.</p>"
+    }
+  ],
+  "attendanceList": [
+    { "mpName": "Mr Leong Mun Wai", "attendance": true },
+    { "mpName": "Mr Desmond Lee", "attendance": true },
+    { "mpName": "Mr Lawrence Wong", "attendance": true },
+    { "mpName": "Ms Tin Pei Ling", "attendance": true },
+    { "mpName": "Mr Gan Thiam Poh", "attendance": false }
+  ]
+}
