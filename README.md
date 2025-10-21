@@ -160,4 +160,22 @@ MIT
 
 ---
 
+---
+
+## API Keys: When Do You Need Them?
+
+**NO keys needed for:**
+- ✅ Running unit tests (98/98 passing)
+- ✅ Fetching real Hansard data
+- ✅ Local development (`npm run dev`)
+- ✅ Live integration test (`./scripts/test-live.sh`)
+
+**Keys needed for:**
+- ⚠️ YouTube video matching: `YOUTUBE_API_KEY` (free: 10K/day)
+- ⚠️ AI moment extraction: `OPENAI_API_KEY` ($0.02/transcript)
+
+**Get keys only when you need these specific features.**
+
+---
+
 **Ready to build?** Start with [INIT.md](./INIT.md)
