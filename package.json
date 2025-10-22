@@ -8,23 +8,23 @@
     "workers/*"
   ],
   "scripts": {
-    "test:integration": "playwright test",
-    "test:integration:ui": "playwright test --ui",
-    "test:integration:headed": "playwright test --headed",
-    "test:integration:debug": "playwright test --debug",
+    "test:integration": "vitest run tests/integration-vitest",
+    "test:integration:watch": "vitest tests/integration-vitest",
+    "test:integration:ui": "vitest --ui tests/integration-vitest",
     "test:unit": "npm run test --workspaces",
     "test:all": "npm run test:unit && npm run test:integration",
     "dev:ingestion": "npm run dev --workspace=workers/capless-ingest",
     "dev:video-matcher": "npm run dev --workspace=workers/video-matcher",
     "dev:moments": "npm run dev --workspace=workers/moments",
     "dev:asset-generator": "npm run dev --workspace=workers/asset-generator",
-    "dev:video-compositor": "npm run dev --workspace=workers/video-compositor",
-    "postinstall": "npx playwright install"
+    "dev:video-compositor": "npm run dev --workspace=workers/video-compositor"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.9.14",
     "@playwright/test": "^1.56.1",
     "@types/node": "^20.19.23",
     "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
     "zod": "^4.1.12"
   },
   "engines": {
