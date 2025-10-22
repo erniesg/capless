@@ -1,0 +1,33 @@
+{
+  "name": "capless",
+  "version": "1.0.0",
+  "description": "AI-powered Parliamentary Content Pipeline - 5 Worker System",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "workers/*"
+  ],
+  "scripts": {
+    "test:integration": "playwright test",
+    "test:integration:ui": "playwright test --ui",
+    "test:integration:headed": "playwright test --headed",
+    "test:integration:debug": "playwright test --debug",
+    "test:unit": "npm run test --workspaces",
+    "test:all": "npm run test:unit && npm run test:integration",
+    "dev:ingestion": "npm run dev --workspace=workers/capless-ingest",
+    "dev:video-matcher": "npm run dev --workspace=workers/video-matcher",
+    "dev:moments": "npm run dev --workspace=workers/moments",
+    "dev:asset-generator": "npm run dev --workspace=workers/asset-generator",
+    "dev:video-compositor": "npm run dev --workspace=workers/video-compositor",
+    "postinstall": "npx playwright install"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^20.19.23",
+    "typescript": "^5.9.3",
+    "zod": "^4.1.12"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

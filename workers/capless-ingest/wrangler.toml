@@ -45,8 +45,9 @@ workers_dev = false
 CACHE_TTL_SECONDS = "86400"  # 24 hours
 
 # Build configuration
-[build]
-command = "npm run build"
+# Note: Commented out for wrangler dev - TypeScript is handled automatically
+# [build]
+# command = "npm run build"
 
 # Observability
 [observability]
