@@ -2,10 +2,16 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright configuration for Capless integration tests
+ *
+ * NOTE: Playwright integration tests have been replaced with Vitest + @cloudflare/vitest-pool-workers
+ * This configuration is kept for reference. Archived tests are in tests/integration-playwright-archived/
+ *
+ * Active integration tests: tests/integration-vitest/ (run with: npm run test:integration)
+ *
  * Tests Cloudflare Workers running locally via wrangler dev
  */
 export default defineConfig({
-  testDir: './tests/integration',
+  testDir: './tests/integration-playwright-archived',
 
   // Test execution settings
   fullyParallel: false, // Sequential by default, parallel where safe

@@ -15,35 +15,39 @@ describe("Ingestion Worker Integration Tests", () => {
 
   describe("POST /api/ingest/hansard - Happy Path", () => {
     it("should ingest Hansard by sitting date", async () => {
-      // Mock Parliament API response
+      // Mock Parliament API response with correct structure
       const mockHansardJSON = {
         metadata: {
+          parlimentNO: 15,
+          sessionNO: 1,
+          volumeNO: 1,
           sittingDate: "02-07-2024",
-          sittingNo: 1,
-          parliamentNo: 15,
-          volumeNo: 1,
+          dateToDisplay: "Tuesday, 2 July 2024",
+          startTimeStr: "12:00 noon",
+          speaker: "Speaker of Parliament",
         },
-        sections: [
+        takesSectionVOList: [
           {
+            startPgNo: 1,
             title: "Oral Answers to Questions",
-            type: "oral-answers",
-            content: [
-              {
-                speaker: "Leader of Opposition",
-                speech: "Mr Speaker, I rise to ask about the budget.",
-                timestamp: "14:30:00",
-              },
-            ],
+            sectionType: "OA",
+            content:
+              '<p><strong>Leader of Opposition</strong>: Mr Speaker, I rise to ask about the budget.</p>',
+          },
+        ],
+        attendanceList: [
+          {
+            mpName: "Leader of Opposition",
+            attendance: true,
           },
         ],
       };
 
+      // Mock the exact fetch URL constructed by the worker
+      // The URL will be: https://sprs.parl.gov.sg/search/getHansardReport/?sittingDate=02-07-2024
       fetchMock
         .get("https://sprs.parl.gov.sg")
-        .intercept({
-          path: "/search/getHansardReport/",
-          query: { sittingDate: "02-07-2024" },
-        })
+        .intercept({ path: (path) => path.includes("/search/getHansardReport/") })
         .reply(200, JSON.stringify(mockHansardJSON));
 
       // Make request to worker
@@ -67,22 +71,27 @@ describe("Ingestion Worker Integration Tests", () => {
     it("should ingest with pre-fetched Hansard JSON", async () => {
       const hansardJSON = {
         metadata: {
+          parlimentNO: 15,
+          sessionNO: 1,
+          volumeNO: 1,
           sittingDate: "02-07-2024",
-          sittingNo: 1,
-          parliamentNo: 15,
-          volumeNo: 1,
+          dateToDisplay: "Tuesday, 2 July 2024",
+          startTimeStr: "12:00 noon",
+          speaker: "Speaker of Parliament",
         },
-        sections: [
+        takesSectionVOList: [
           {
+            startPgNo: 1,
             title: "Bills - First Reading",
-            type: "bills",
-            content: [
-              {
-                speaker: "Minister for Finance",
-                speech: "I beg to move the first reading of the Finance Bill.",
-                timestamp: "15:00:00",
-              },
-            ],
+            sectionType: "BILLS",
+            content:
+              '<p><strong>Minister for Finance</strong>: I beg to move the first reading of the Finance Bill.</p>',
+          },
+        ],
+        attendanceList: [
+          {
+            mpName: "Minister for Finance",
+            attendance: true,
           },
         ],
       };
