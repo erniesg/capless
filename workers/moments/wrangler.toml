@@ -1,7 +1,7 @@
 name = "capless-moments"
 main = "src/index.ts"
 compatibility_date = "2025-01-20"
-node_compat = true
+compatibility_flags = ["nodejs_compat"]
 
 # Environment bindings
 [[r2_buckets]]
@@ -13,10 +13,10 @@ preview_bucket_name = "capless-preview"
 binding = "VECTORIZE"
 index_name = "capless-moments"
 
-# Redis for caching
-[[unsafe.bindings]]
-name = "REDIS"
-type = "ratelimit"
+# Redis for caching (commented out for local dev - causes issues)
+# [[unsafe.bindings]]
+# name = "REDIS"
+# type = "ratelimit"
 
 # Environment variables (secrets set via wrangler secret put)
 # OPENAI_API_KEY - set via: wrangler secret put OPENAI_API_KEY
@@ -31,4 +31,4 @@ MAX_MOMENTS_PER_TRANSCRIPT = 20
 MIN_VIRALITY_SCORE = 5.0
 
 [dev]
-port = 8788
+port = 8789

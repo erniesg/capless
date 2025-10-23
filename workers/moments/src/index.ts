@@ -1,4 +1,3 @@
-import { OpenAI } from 'openai';
 import { MomentExtractor } from './extractor';
 import type {
   Env,
@@ -52,6 +51,15 @@ class Storage {
     }
 
     return await object.json();
+  }
+
+  async saveTranscript(transcript: ProcessedTranscript): Promise<void> {
+    const key = `transcripts/processed/${transcript.transcript_id}.json`;
+    await this.r2.put(key, JSON.stringify(transcript, null, 2), {
+      httpMetadata: {
+        contentType: 'application/json',
+      },
+    });
   }
 }
 
@@ -159,13 +167,13 @@ export default {
     }
 
     // Initialize services
-    const openai = new OpenAI({
-      apiKey: env.OPENAI_API_KEY,
-    });
-
     const storage = new Storage(env.R2);
     const cache = new Cache(env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN);
-    const extractor = new MomentExtractor(openai, env.OPENAI_MODEL);
+
+    // Use Anthropic API key (fallback to OpenAI if not set)
+    const apiKey = env.ANTHROPIC_API_KEY || env.OPENAI_API_KEY;
+    const model = env.ANTHROPIC_API_KEY ? 'claude-haiku-4-5-20251001' : env.OPENAI_MODEL;
+    const extractor = new MomentExtractor(apiKey, model);
 
     try {
       // POST /api/moments/extract
@@ -310,6 +318,21 @@ export default {
             score: match.score,
             ...match.metadata,
           })),
+        });
+      }
+
+      // POST /api/test/upload-transcript (for local testing only)
+      if (url.pathname === '/api/test/upload-transcript' && request.method === 'POST') {
+        const body = await request.json();
+        const transcript = ProcessedTranscriptSchema.parse(body);
+
+        await storage.saveTranscript(transcript);
+
+        return jsonResponse({
+          success: true,
+          transcript_id: transcript.transcript_id,
+          message: `Transcript uploaded successfully: ${transcript.transcript_id}`,
+          segments: transcript.metadata.total_segments,
         });
       }
 

@@ -1,7 +1,7 @@
 name = "capless-video-matcher"
 main = "src/index.ts"
 compatibility_date = "2025-01-20"
-node_compat = true
+compatibility_flags = ["nodejs_compat"]
 
 # R2 Storage for persisting video matches
 [[r2_buckets]]
@@ -10,7 +10,7 @@ bucket_name = "capless"
 
 # Environment variables (non-sensitive)
 [vars]
-YOUTUBE_CHANNEL_ID = "UCq9h3I2kQQCLb7snx_X8zSw"
+YOUTUBE_CHANNEL_ID = "UC1NBkF4mXpQXvokXgRomh9w"  # MDDI Singapore channel
 CACHE_TTL_SECONDS = "604800"  # 7 days
 
 # Secrets (set with: wrangler secret put SECRET_NAME)

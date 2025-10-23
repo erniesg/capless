@@ -13,16 +13,18 @@ import { ViralityScorer } from './scorer';
 import { z } from 'zod';
 
 /**
- * MomentExtractor uses OpenAI to identify viral moments from transcripts
+ * MomentExtractor uses Claude or OpenAI to identify viral moments from transcripts
  */
 export class MomentExtractor {
-  private openai: OpenAI;
+  private apiKey: string;
   private model: string;
   private scorer: ViralityScorer;
+  private useClaude: boolean;
 
-  constructor(openai: OpenAI, model: string = 'gpt-4o') {
-    this.openai = openai;
+  constructor(apiKey: string, model: string = 'claude-haiku-4-5-20251001', useClaude: boolean = true) {
+    this.apiKey = apiKey;
     this.model = model;
+    this.useClaude = useClaude;
     this.scorer = new ViralityScorer();
   }
 
@@ -123,15 +125,11 @@ Example:
   }
 
   /**
-   * Generate embedding for a moment using OpenAI
+   * Generate embedding for a moment (SKIPPED for faster processing)
    */
   async generateEmbedding(text: string): Promise<number[]> {
-    const response = await this.openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: text,
-    });
-
-    return response.data[0]?.embedding ?? [];
+    // Skip embeddings for faster processing
+    return [];
   }
 
   /**
@@ -139,7 +137,16 @@ Example:
    */
   private parseAIResponse(content: string): AIAnalysis[] {
     try {
-      const parsed = JSON.parse(content);
+      // Strip markdown code blocks if present
+      let cleanContent = content.trim();
+      if (cleanContent.startsWith('```')) {
+        // Remove opening ```json or ```
+        cleanContent = cleanContent.replace(/^```(?:json)?\s*\n?/, '');
+        // Remove closing ```
+        cleanContent = cleanContent.replace(/\n?```\s*$/, '');
+      }
+
+      const parsed = JSON.parse(cleanContent);
       const analyses = Array.isArray(parsed) ? parsed : [parsed];
 
       // Validate each analysis
@@ -180,7 +187,7 @@ Example:
       .map(idx => transcript.segments[idx]?.segment_id)
       .filter((id): id is string => id !== undefined);
 
-    // Generate embedding
+    // Generate embedding (will be empty for now)
     const embedding = await this.generateEmbedding(analysis.quote);
 
     const moment: ViralMoment = {
@@ -239,7 +246,7 @@ Example:
   }
 
   /**
-   * Extract viral moments from a transcript
+   * Extract viral moments from a transcript using OpenAI
    */
   async extractMoments(
     transcript: ProcessedTranscript,
@@ -251,30 +258,48 @@ Example:
     // Generate prompt
     const prompt = this.generatePrompt(transcript);
 
-    // Call OpenAI
-    const response = await this.openai.chat.completions.create({
-      model: this.model,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert at identifying viral-worthy moments in political discourse. Return only valid JSON.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 2000,
+    // Call Claude API with prefilled assistant response for JSON consistency
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': this.apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: this.model,
+        max_tokens: 4000,
+        temperature: 0.7,
+        system: 'You are an expert at identifying viral-worthy moments in political discourse. Return only valid JSON arrays.',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+          {
+            role: 'assistant',
+            content: '[', // Prefill to force JSON array format
+          },
+        ],
+      }),
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response from OpenAI');
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Claude API error: ${response.status} ${error}`);
     }
 
+    const data = await response.json();
+    const content = data.content?.[0]?.text;
+    if (!content) {
+      throw new Error('No response from Claude');
+    }
+
+    // Prepend the opening bracket since we prefilled it
+    const fullContent = '[' + content;
+
     // Parse AI response
-    const analyses = this.parseAIResponse(content);
+    const analyses = this.parseAIResponse(fullContent);
 
     // Convert to moments with embeddings
     const allMoments = await Promise.all(

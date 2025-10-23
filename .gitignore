@@ -35,3 +35,10 @@ yarn-error.log*
 # Temporary files
 *.tmp
 *.temp
+.env.local
+.env
+.dev.vars
+output/
+*.mp4
+*.mp3
+*.json3

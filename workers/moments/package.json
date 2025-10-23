@@ -13,7 +13,12 @@
     "lint": "eslint src test",
     "type-check": "tsc --noEmit"
   },
-  "keywords": ["cloudflare-workers", "parliament", "viral-content", "ai"],
+  "keywords": [
+    "cloudflare-workers",
+    "parliament",
+    "viral-content",
+    "ai"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {

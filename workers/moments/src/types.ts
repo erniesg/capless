@@ -157,7 +157,8 @@ export type BatchExtractRequest = z.infer<typeof BatchExtractRequestSchema>;
  */
 export interface Env {
   // Secrets
-  OPENAI_API_KEY: string;
+  ANTHROPIC_API_KEY?: string;
+  OPENAI_API_KEY?: string;
   UPSTASH_REDIS_REST_URL?: string;
   UPSTASH_REDIS_REST_TOKEN?: string;
 
