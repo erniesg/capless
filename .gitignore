@@ -39,6 +39,7 @@ yarn-error.log*
 .env
 .dev.vars
 output/
+test-outputs/
 *.mp4
 *.mp3
 *.json3

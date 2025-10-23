@@ -38,7 +38,7 @@ export class MomentExtractor {
 
     return `You are a content strategist for viral social media analyzing Singapore Parliament proceedings.
 
-Analyze this parliamentary exchange and identify moments with viral potential:
+Analyze this parliamentary exchange and identify moments with viral potential - BOTH problematic AND wholesome/positive moments:
 
 ${segmentsText}
 
@@ -48,21 +48,29 @@ For each viral moment, identify:
 3. Why it's viral-worthy
 4. Virality score (0-10, be generous - we want shareable content)
 5. Primary topic/theme
-6. Emotional tone (e.g., defensive, evasive, bureaucratic, angry, confused)
+6. Emotional tone (e.g., defensive, evasive, bureaucratic, compassionate, inspiring, pragmatic)
 7. Target demographic (e.g., Gen Z, working class, families, elderly)
 8. Whether it contains bureaucratic jargon (true/false)
 9. Whether it contains contradictions or illogical reasoning (true/false)
 10. Whether it affects everyday Singaporeans (true/false)
 11. The segment indices this moment spans (array of numbers from the [idx] markers)
 
-Look for moments that are:
+Look for moments that are PROBLEMATIC:
 - Bureaucratic doublespeak or dense jargon
 - Contradictions or illogical reasoning
-- Statements affecting everyday Singaporeans (healthcare, housing, transport, cost of living)
-- Memorable soundbites or quotable phrases
-- Moments that make people say "What?!" or "Seriously?!"
 - Defensive or evasive responses to direct questions
 - Out-of-touch statements from officials
+- Moments that make people say "What?!" or "Seriously?!"
+
+Look for moments that are WHOLESOME/POSITIVE:
+- Compassionate responses showing empathy for citizens
+- Bold policy commitments with clear timelines
+- Ministers acknowledging mistakes and taking responsibility
+- Pragmatic solutions to real problems
+- Inspiring statements about Singapore's future
+- Cross-party collaboration and respectful debate
+- Direct, honest answers without corporate speak
+- Promises of concrete help for struggling Singaporeans
 
 Return ONLY a JSON array of moments, sorted by virality score (highest first). Each object should have these exact fields:
 - quote (string)
