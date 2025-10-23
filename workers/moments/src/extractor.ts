@@ -10,21 +10,32 @@ import type {
 } from './types';
 import { AIAnalysisSchema } from './types';
 import { ViralityScorer } from './scorer';
+import { GeminiProvider } from './providers/gemini';
+import { ChunkedExtractor } from './providers/chunked';
 import { z } from 'zod';
 
 /**
- * MomentExtractor uses Claude or OpenAI to identify viral moments from transcripts
+ * MomentExtractor uses Claude Haiku or Gemini to identify viral moments from transcripts
+ * - Claude Haiku 4.5: Fast, cost-effective, 200K context window
+ * - Gemini 2.5 Flash: Fallback for large transcripts, 1M context window
  */
 export class MomentExtractor {
   private apiKey: string;
   private model: string;
   private scorer: ViralityScorer;
   private useClaude: boolean;
+  private geminiApiKey?: string;
 
-  constructor(apiKey: string, model: string = 'claude-haiku-4-5-20251001', useClaude: boolean = true) {
+  constructor(
+    apiKey: string,
+    model: string = 'claude-haiku-4-5-20251001',
+    useClaude: boolean = true,
+    geminiApiKey?: string
+  ) {
     this.apiKey = apiKey;
     this.model = model;
     this.useClaude = useClaude;
+    this.geminiApiKey = geminiApiKey;
     this.scorer = new ViralityScorer();
   }
 
@@ -254,7 +265,7 @@ Example:
   }
 
   /**
-   * Extract viral moments from a transcript using OpenAI
+   * Extract viral moments from a transcript using Claude Haiku or Gemini
    */
   async extractMoments(
     transcript: ProcessedTranscript,
@@ -262,6 +273,62 @@ Example:
   ): Promise<ExtractionResult> {
     const minScore = criteria?.min_score ?? 5.0;
     const maxResults = criteria?.max_results ?? 20;
+
+    // Estimate token count (rough: 1 token ≈ 4 characters)
+    const transcriptJson = JSON.stringify(transcript);
+    const estimatedTokens = Math.floor(transcriptJson.length / 4);
+
+    console.log(
+      `[Extractor] Processing ${transcript.segments.length} segments (~${estimatedTokens.toLocaleString()} tokens)`
+    );
+
+    // Use Gemini for large transcripts that exceed Claude's 200K limit
+    const CLAUDE_TOKEN_LIMIT = 190000; // Leave 10K buffer for safety
+    const GEMINI_TOKEN_LIMIT = 900000; // Gemini 1M limit with buffer
+
+    if (estimatedTokens > CLAUDE_TOKEN_LIMIT) {
+      if (!this.geminiApiKey) {
+        console.log(
+          `[Extractor] Transcript too large for Claude (${estimatedTokens} tokens). No Gemini API key. Using chunking strategy...`
+        );
+
+        const chunked = new ChunkedExtractor(this.apiKey, this.model, 4000);
+        return await chunked.extractMoments(transcript, criteria);
+      }
+
+      if (estimatedTokens > GEMINI_TOKEN_LIMIT) {
+        console.log(
+          `[Extractor] Transcript too large even for Gemini (${estimatedTokens} > ${GEMINI_TOKEN_LIMIT}). Using chunking strategy...`
+        );
+
+        const chunked = new ChunkedExtractor(this.apiKey, this.model, 4000);
+        return await chunked.extractMoments(transcript, criteria);
+      }
+
+      console.log(
+        `[Extractor] Transcript exceeds Claude limit (${estimatedTokens} > ${CLAUDE_TOKEN_LIMIT}), trying Gemini 2.5 Flash...`
+      );
+
+      try {
+        const gemini = new GeminiProvider(this.geminiApiKey);
+        return await gemini.extractMoments(transcript, criteria);
+      } catch (error: any) {
+        // If Gemini fails (quota, rate limit, etc.), fall back to chunking
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+          console.log(
+            `[Extractor] Gemini quota exceeded or rate limited. Falling back to chunking strategy...`
+          );
+
+          const chunked = new ChunkedExtractor(this.apiKey, this.model, 4000);
+          return await chunked.extractMoments(transcript, criteria);
+        }
+
+        // Re-throw other errors
+        throw error;
+      }
+    }
+
+    console.log(`[Extractor] Using Claude Haiku 4.5 (within ${CLAUDE_TOKEN_LIMIT} token limit)`);
 
     // Generate prompt
     const prompt = this.generatePrompt(transcript);
@@ -276,9 +343,9 @@ Example:
       },
       body: JSON.stringify({
         model: this.model,
-        max_tokens: 4000,
+        max_tokens: 8192, // Increased for larger JSON responses
         temperature: 0.7,
-        system: 'You are an expert at identifying viral-worthy moments in political discourse. Return only valid JSON arrays.',
+        system: 'You are an expert at identifying viral-worthy moments in political discourse. Return only valid JSON arrays with a maximum of 10-15 moments.',
         messages: [
           {
             role: 'user',

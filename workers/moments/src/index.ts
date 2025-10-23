@@ -173,7 +173,8 @@ export default {
     // Use Anthropic API key (fallback to OpenAI if not set)
     const apiKey = env.ANTHROPIC_API_KEY || env.OPENAI_API_KEY;
     const model = env.ANTHROPIC_API_KEY ? 'claude-haiku-4-5-20251001' : env.OPENAI_MODEL;
-    const extractor = new MomentExtractor(apiKey, model);
+    const useClaude = !!env.ANTHROPIC_API_KEY;
+    const extractor = new MomentExtractor(apiKey, model, useClaude, env.GEMINI_API_KEY);
 
     try {
       // POST /api/moments/extract
