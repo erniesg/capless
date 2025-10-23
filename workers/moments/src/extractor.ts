@@ -152,36 +152,99 @@ Example:
   }
 
   /**
-   * Parse and validate AI response
+   * Parse and validate AI response with robust error recovery
    */
   private parseAIResponse(content: string): AIAnalysis[] {
     try {
       // Strip markdown code blocks if present
       let cleanContent = content.trim();
       if (cleanContent.startsWith('```')) {
-        // Remove opening ```json or ```
         cleanContent = cleanContent.replace(/^```(?:json)?\s*\n?/, '');
-        // Remove closing ```
         cleanContent = cleanContent.replace(/\n?```\s*$/, '');
       }
 
-      const parsed = JSON.parse(cleanContent);
-      const analyses = Array.isArray(parsed) ? parsed : [parsed];
+      // Try direct parsing first
+      try {
+        const parsed = JSON.parse(cleanContent);
+        const analyses = Array.isArray(parsed) ? parsed : [parsed];
+        return this.validateAnalyses(analyses);
+      } catch (firstError) {
+        console.log('[Parser] Direct parse failed, attempting repair...');
 
-      // Validate each analysis
-      return analyses
-        .map(item => {
-          try {
-            return AIAnalysisSchema.parse(item);
-          } catch (error) {
-            console.error('Invalid AI analysis item:', error);
-            return null;
-          }
-        })
-        .filter((item): item is AIAnalysis => item !== null);
+        // Attempt to repair truncated JSON
+        const repaired = this.repairTruncatedJSON(cleanContent);
+
+        if (repaired) {
+          const parsed = JSON.parse(repaired);
+          const analyses = Array.isArray(parsed) ? parsed : [parsed];
+          console.log(`[Parser] Repaired JSON, recovered ${analyses.length} moments`);
+          return this.validateAnalyses(analyses);
+        }
+
+        throw firstError; // Re-throw if repair failed
+      }
     } catch (error) {
-      console.error('Failed to parse AI response:', error);
+      console.error('[Parser] Failed to parse AI response:', error);
+      console.error('[Parser] Content length:', content.length);
+      console.error('[Parser] Content preview:', content.substring(0, 200) + '...');
       return [];
+    }
+  }
+
+  /**
+   * Validate and filter AI analyses
+   */
+  private validateAnalyses(analyses: any[]): AIAnalysis[] {
+    return analyses
+      .map(item => {
+        try {
+          return AIAnalysisSchema.parse(item);
+        } catch (error) {
+          console.error('[Validator] Invalid AI analysis item:', error);
+          return null;
+        }
+      })
+      .filter((item): item is AIAnalysis => item !== null);
+  }
+
+  /**
+   * Attempt to repair truncated JSON arrays
+   */
+  private repairTruncatedJSON(content: string): string | null {
+    try {
+      // Find the last complete object by locating the last closing brace
+      const lastBrace = content.lastIndexOf('}');
+
+      if (lastBrace === -1) {
+        return null; // No complete objects
+      }
+
+      // Truncate to last complete object and close the array
+      let truncated = content.substring(0, lastBrace + 1);
+
+      // Count open/close braces to ensure balance
+      const openBraces = (truncated.match(/{/g) || []).length;
+      const closeBraces = (truncated.match(/}/g) || []).length;
+
+      if (openBraces === closeBraces) {
+        // Ensure array is properly closed
+        if (!truncated.trim().endsWith(']')) {
+          truncated = truncated.trim();
+          // Remove trailing comma if present
+          if (truncated.endsWith(',')) {
+            truncated = truncated.slice(0, -1);
+          }
+          truncated += '\n]';
+        }
+
+        console.log(`[Repair] Truncated from ${content.length} to ${truncated.length} chars`);
+        return truncated;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('[Repair] Failed to repair JSON:', error);
+      return null;
     }
   }
 
@@ -343,9 +406,9 @@ Example:
       },
       body: JSON.stringify({
         model: this.model,
-        max_tokens: 8192, // Increased for larger JSON responses
+        max_tokens: 16000, // Increased to allow complete JSON responses
         temperature: 0.7,
-        system: 'You are an expert at identifying viral-worthy moments in political discourse. Return only valid JSON arrays with a maximum of 10-15 moments.',
+        system: 'You are an expert at identifying viral-worthy moments in political discourse. Return only valid JSON arrays. IMPORTANT: Limit to 8-10 moments per response to ensure complete JSON output within token limits.',
         messages: [
           {
             role: 'user',
@@ -356,6 +419,7 @@ Example:
             content: '[', // Prefill to force JSON array format
           },
         ],
+        stop_sequences: ['\n]'], // Stop after closing array to prevent truncation
       }),
     });
 

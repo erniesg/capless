@@ -122,7 +122,7 @@ export class ChunkedExtractor {
     // Limit moments per chunk to prevent token overflow
     const chunkCriteria: ExtractionCriteria = {
       ...criteria,
-      max_results: 10, // Limit to 10 moments per chunk
+      max_results: 8, // Reduced to 8 moments per chunk for better JSON stability
     };
 
     // Process each chunk
