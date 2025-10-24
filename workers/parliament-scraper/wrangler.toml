@@ -8,6 +8,12 @@ compatibility_flags = ["nodejs_compat"]
 binding = "R2"
 bucket_name = "capless-preview"
 
+# KV namespace for tracking checked dates
+[[kv_namespaces]]
+binding = "DATES_KV"
+id = "02616e8644a44f02ae8e1cb90c40cffe"
+preview_id = "1c9009d2b27747d288228db65070b340"
+
 # Queue for processing dates with rate limiting
 [[queues.producers]]
 queue = "parliament-dates-queue"
