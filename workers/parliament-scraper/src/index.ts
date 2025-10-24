@@ -162,24 +162,40 @@ export default {
         const endDate = new Date();
         const totalDates = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
-        // Count scraped dates in R2 and find latest
-        const list = await env.R2.list({ prefix: 'hansard/raw/', limit: 1000 });
-        const scrapedCount = list.objects.length;
+        // Count ALL scraped dates in R2 with pagination
+        let scrapedCount = 0;
+        let allDates: string[] = [];
+        let cursor: string | undefined = undefined;
 
-        // Find latest date from R2 objects
+        do {
+          const list = await env.R2.list({
+            prefix: 'hansard/raw/',
+            limit: 1000,
+            cursor: cursor,
+          });
+
+          scrapedCount += list.objects.length;
+
+          // Collect dates for finding latest
+          allDates.push(...list.objects.map(obj =>
+            obj.key.replace('hansard/raw/', '').replace('.json', '')
+          ));
+
+          cursor = list.truncated ? list.cursor : undefined;
+        } while (cursor);
+
+        // Find latest date from ALL R2 objects
         let lastDateChecked = 'Unknown';
-        if (list.objects.length > 0) {
-          const dates = list.objects
-            .map(obj => obj.key.replace('hansard/raw/', '').replace('.json', ''))
-            .sort((a, b) => {
-              // Sort by date (DD-MM-YYYY format)
-              const [dayA, monthA, yearA] = a.split('-').map(Number);
-              const [dayB, monthB, yearB] = b.split('-').map(Number);
-              const dateA = new Date(yearA, monthA - 1, dayA);
-              const dateB = new Date(yearB, monthB - 1, dayB);
-              return dateB.getTime() - dateA.getTime();
-            });
-          lastDateChecked = dates[0] || 'Unknown';
+        if (allDates.length > 0) {
+          const sortedDates = allDates.sort((a, b) => {
+            // Sort by date (DD-MM-YYYY format)
+            const [dayA, monthA, yearA] = a.split('-').map(Number);
+            const [dayB, monthB, yearB] = b.split('-').map(Number);
+            const dateA = new Date(yearA, monthA - 1, dayA);
+            const dateB = new Date(yearB, monthB - 1, dayB);
+            return dateB.getTime() - dateA.getTime();
+          });
+          lastDateChecked = sortedDates[0] || 'Unknown';
         }
 
         return new Response(
@@ -199,21 +215,35 @@ export default {
 
       // GET /check-today - Check all dates from last scraped to today
       if (url.pathname === '/check-today' && request.method === 'GET') {
-        // Find the latest date in R2
-        const list = await env.R2.list({ prefix: 'hansard/raw/', limit: 1000 });
+        // Find the latest date in R2 with pagination
+        let allDates: string[] = [];
+        let cursor: string | undefined = undefined;
+
+        do {
+          const list = await env.R2.list({
+            prefix: 'hansard/raw/',
+            limit: 1000,
+            cursor: cursor,
+          });
+
+          allDates.push(...list.objects.map(obj =>
+            obj.key.replace('hansard/raw/', '').replace('.json', '')
+          ));
+
+          cursor = list.truncated ? list.cursor : undefined;
+        } while (cursor);
 
         let startDate: Date;
-        if (list.objects.length > 0) {
-          // Get latest scraped date
-          const latestDateStr = list.objects
-            .map(obj => obj.key.replace('hansard/raw/', '').replace('.json', ''))
-            .sort((a, b) => {
-              const [dayA, monthA, yearA] = a.split('-').map(Number);
-              const [dayB, monthB, yearB] = b.split('-').map(Number);
-              const dateA = new Date(yearA, monthA - 1, dayA);
-              const dateB = new Date(yearB, monthB - 1, dayB);
-              return dateB.getTime() - dateA.getTime();
-            })[0];
+        if (allDates.length > 0) {
+          // Get latest scraped date from ALL dates
+          const sortedDates = allDates.sort((a, b) => {
+            const [dayA, monthA, yearA] = a.split('-').map(Number);
+            const [dayB, monthB, yearB] = b.split('-').map(Number);
+            const dateA = new Date(yearA, monthA - 1, dayA);
+            const dateB = new Date(yearB, monthB - 1, dayB);
+            return dateB.getTime() - dateA.getTime();
+          });
+          const latestDateStr = sortedDates[0];
 
           const [day, month, year] = latestDateStr.split('-').map(Number);
           startDate = new Date(year, month - 1, day);
