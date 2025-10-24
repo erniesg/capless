@@ -9,8 +9,8 @@
  */
 
 import { generateText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { openai } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenAI } from '@ai-sdk/openai';
 import type { Env, ChatResponse, Citation, VectorSearchResult } from './types';
 import { generateEmbeddings } from './embedding-service';
 
@@ -107,11 +107,13 @@ ${context}`;
 Please provide a clear, concise answer based on the parliamentary transcript context provided.`;
 
   try {
-    // Try Anthropic Claude first (better at following instructions)
+    // Try Anthropic Claude Haiku 4.5 (fast + cheap for RAG)
     if (env.ANTHROPIC_API_KEY) {
-      const model = anthropic('claude-3-5-sonnet-20241022', {
-        apiKey: env.ANTHROPIC_API_KEY, // Explicitly pass API key
+      console.log(`[Chat] Using Anthropic with API key (length: ${env.ANTHROPIC_API_KEY?.length || 0})`);
+      const anthropic = createAnthropic({
+        apiKey: env.ANTHROPIC_API_KEY,
       });
+      const model = anthropic('claude-haiku-4-5-20251001');
 
       const result = await generateText({
         model,
@@ -121,15 +123,16 @@ Please provide a clear, concise answer based on the parliamentary transcript con
         temperature: 0.3, // Lower temperature for factual responses
       });
 
-      console.log(`[Chat] Generated answer with Claude (${result.usage.totalTokens} tokens)`);
-      return { answer: result.text, model: 'claude-3-5-sonnet-20241022' };
+      console.log(`[Chat] Generated answer with Claude Haiku 4.5 (${result.usage.totalTokens} tokens)`);
+      return { answer: result.text, model: 'claude-haiku-4-5' };
     }
 
     // Fallback to OpenAI
     if (env.OPENAI_API_KEY) {
-      const model = openai('gpt-4o-mini', {
-        apiKey: env.OPENAI_API_KEY, // Explicitly pass API key
+      const openai = createOpenAI({
+        apiKey: env.OPENAI_API_KEY,
       });
+      const model = openai('gpt-4o-mini');
 
       const result = await generateText({
         model,
@@ -234,6 +237,9 @@ Please suggest 3 relevant follow-up questions (one per line, no numbering):`;
 
   try {
     if (env.ANTHROPIC_API_KEY) {
+      const anthropic = createAnthropic({
+        apiKey: env.ANTHROPIC_API_KEY,
+      });
       const model = anthropic('claude-3-5-sonnet-20241022');
 
       const result = await generateText({
