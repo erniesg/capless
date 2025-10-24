@@ -1,0 +1,7 @@
+name = "capless-demo"
+main = "src/index.js"
+compatibility_date = "2024-10-24"
+
+# Static Assets configuration
+[assets]
+directory = "./public"

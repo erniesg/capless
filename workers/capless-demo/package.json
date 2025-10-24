@@ -1,0 +1,13 @@
+{
+  "name": "capless-demo",
+  "version": "1.0.0",
+  "description": "Capless demo frontend - Viral Parliamentary Moments",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.45.0"
+  }
+}
