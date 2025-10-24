@@ -6,9 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 # Environment bindings
 
 # R2 bucket for loading Hansard transcripts
+# Using capless-preview which has all 1,725 real Hansard sessions
 [[r2_buckets]]
 binding = "R2"
-bucket_name = "capless"
+bucket_name = "capless-preview"
 preview_bucket_name = "capless-preview"
 
 # Vectorize index for embeddings
