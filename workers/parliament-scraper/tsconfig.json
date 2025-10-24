@@ -6,4 +6,3 @@
     "types": ["@cloudflare/workers-types"]
   }
 }
-EOF && git add workers/parliament-scraper/tsconfig.json && git commit -m "chore: add tsconfig for parliament-scraper"
