@@ -196,9 +196,26 @@ export class SoraClient {
       }) as any;
 
       console.log('[VeoClient] Video generation complete!');
+      console.log('[VeoClient] Raw output:', JSON.stringify(output, null, 2));
 
       // Extract video URL from Replicate output
-      const videoUrl = typeof output === 'string' ? output : output.url?.() || output[0];
+      // Replicate can return: string URL, {url: string}, or [url_string]
+      let videoUrl: string;
+      if (typeof output === 'string') {
+        videoUrl = output;
+      } else if (Array.isArray(output) && output.length > 0) {
+        videoUrl = output[0];
+      } else if (output && typeof output === 'object') {
+        videoUrl = (output as any).url || (output as any).video || (output as any)[0];
+      } else {
+        throw new Error(`Unexpected Replicate output format: ${typeof output}`);
+      }
+
+      if (!videoUrl) {
+        throw new Error('No video URL found in Replicate output');
+      }
+
+      console.log('[VeoClient] Extracted video URL:', videoUrl);
 
       return {
         video_url: videoUrl,

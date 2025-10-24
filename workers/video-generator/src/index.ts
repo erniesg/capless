@@ -89,7 +89,7 @@ app.post('/api/video/generate', async (c) => {
     const response: VideoGenerationResponse = {
       job_id: jobId,
       status: 'processing',
-      estimated_time_seconds: 180, // Sora typically takes 2-3 minutes
+      estimated_time_seconds: 240, // Veo 3.1 typically takes 3-5 minutes
       poll_url: `/api/video/status/${jobId}`,
     };
 
@@ -134,9 +134,9 @@ app.get('/api/video/status/:job_id', async (c) => {
       if (!job.scripts) {
         progress = 'Generating script...';
       } else if (!job.sora_generation_id) {
-        progress = 'Submitting to Sora API...';
+        progress = 'Submitting to Veo 3.1 API...';
       } else {
-        progress = 'Generating video (this may take 2-3 minutes)...';
+        progress = 'Generating video with Veo 3.1 (this may take 3-5 minutes)...';
       }
     }
 
