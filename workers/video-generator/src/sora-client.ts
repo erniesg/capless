@@ -181,38 +181,53 @@ export class SoraClient {
     }
 
     try {
-      const duration = options.duration || 15;
+      const duration = options.duration || 8; // Veo 3.1 supports 4, 8, or 16 seconds
+      const aspectRatio = options.size === '1024x1792' ? '9:16' : '16:9'; // Vertical or horizontal
 
       console.log('[VeoClient] Generating video with Veo 3.1 via Replicate');
       console.log('[VeoClient] Model: google/veo-3.1');
       console.log('[VeoClient] Duration:', duration);
+      console.log('[VeoClient] Aspect ratio:', aspectRatio);
       console.log('[VeoClient] Prompt length:', prompt.length);
 
       // Call Replicate Veo 3.1 API
       const output = await this.replicate.run('google/veo-3.1', {
         input: {
           prompt,
+          duration,
+          aspect_ratio: aspectRatio,
+          resolution: '1080p',
+          generate_audio: true,
         },
       }) as any;
 
       console.log('[VeoClient] Video generation complete!');
-      console.log('[VeoClient] Raw output:', JSON.stringify(output, null, 2));
+      console.log('[VeoClient] Output type:', typeof output);
 
       // Extract video URL from Replicate output
-      // Replicate can return: string URL, {url: string}, or [url_string]
+      // Veo 3.1 returns a string URL according to schema: {"type": "string", "format": "uri"}
+      // But Replicate SDK might wrap it in a file object with .url() method
       let videoUrl: string;
+
       if (typeof output === 'string') {
         videoUrl = output;
-      } else if (Array.isArray(output) && output.length > 0) {
-        videoUrl = output[0];
       } else if (output && typeof output === 'object') {
-        videoUrl = (output as any).url || (output as any).video || (output as any)[0];
+        // Try to call .url() if it's a file object
+        if (typeof (output as any).url === 'function') {
+          videoUrl = (output as any).url();
+        } else if (typeof (output as any).url === 'string') {
+          videoUrl = (output as any).url;
+        } else if (Array.isArray(output) && output.length > 0) {
+          videoUrl = output[0];
+        } else {
+          throw new Error(`Unexpected Replicate output format: ${JSON.stringify(output)}`);
+        }
       } else {
-        throw new Error(`Unexpected Replicate output format: ${typeof output}`);
+        throw new Error(`Unexpected Replicate output type: ${typeof output}`);
       }
 
-      if (!videoUrl) {
-        throw new Error('No video URL found in Replicate output');
+      if (!videoUrl || typeof videoUrl !== 'string') {
+        throw new Error(`Invalid video URL: ${videoUrl}`);
       }
 
       console.log('[VeoClient] Extracted video URL:', videoUrl);
