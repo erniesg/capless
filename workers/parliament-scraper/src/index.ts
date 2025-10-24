@@ -400,19 +400,21 @@ export default {
         );
       }
 
-      // GET /backfill-kv?offset=0&limit=500 - Populate KV with no_session for dates NOT in R2
+      // GET /backfill-kv?offset=0&limit=500 - Mark dates WITHOUT sessions as no_session
+      // This is the OPPOSITE of /sync-r2-batch
+      // This marks dates NOT in R2 as 'no_session' (dates without parliament sessions)
       // Uses pagination to avoid hitting 1000 subrequest limit
-      // Call multiple times with increasing offset until complete=true
       if (url.pathname === '/backfill-kv' && request.method === 'GET') {
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
         const limit = parseInt(url.searchParams.get('limit') || '500', 10);
 
-        console.log(`[Backfill] Starting batch: offset=${offset}, limit=${limit}`);
+        console.log(`[No-Session Backfill] Starting batch: offset=${offset}, limit=${limit}`);
 
         // Step 1: Get all dates in R2 (dates WITH sessions)
         const r2Dates = new Set<string>();
         let cursor: string | undefined = undefined;
 
+        console.log(`[No-Session Backfill] Fetching R2 dates...`);
         do {
           const list = await env.R2.list({
             prefix: 'hansard/raw/',
@@ -428,21 +430,23 @@ export default {
           cursor = list.truncated ? list.cursor : undefined;
         } while (cursor);
 
-        console.log(`[Backfill] Found ${r2Dates.size} dates in R2 (with sessions)`);
+        console.log(`[No-Session Backfill] Found ${r2Dates.size} dates in R2 (with sessions)`);
 
         // Step 2: Generate all dates from 1955 to today
         const allDates = generateDateRange(new Date('1955-04-22'), new Date());
         const totalDates = allDates.length;
+
+        console.log(`[No-Session Backfill] Processing batch ${offset}-${offset+limit} of ${totalDates} total dates`);
 
         // Step 3: Process only the requested batch
         const batch = allDates.slice(offset, offset + limit);
         let backfilled = 0;
 
         for (const date of batch) {
-          // Skip if date is in R2 (already has session)
+          // Skip if date is in R2 (already has session - should use /sync-r2-batch for those)
           if (r2Dates.has(date)) continue;
 
-          // Write directly without checking (KV put is idempotent)
+          // Mark date as no_session (date without parliament session)
           await markDateChecked(env.DATES_KV, date, 'no_session', 1);
           backfilled++;
         }
@@ -451,12 +455,13 @@ export default {
         const complete = processed >= totalDates;
         const nextOffset = complete ? null : processed;
 
-        console.log(`[Backfill] Batch complete: ${backfilled} entries written, ${processed}/${totalDates} total processed`);
+        console.log(`[No-Session Backfill] Batch complete: ${backfilled} no_session entries written, ${processed}/${totalDates} total processed`);
 
         return new Response(
           JSON.stringify({
-            message: complete ? 'KV backfill complete' : 'Batch processed',
+            message: complete ? 'No-session backfill complete' : 'Batch processed',
             total_dates: totalDates,
+            r2_sessions: r2Dates.size,
             processed,
             backfilled_this_batch: backfilled,
             complete,
@@ -469,19 +474,20 @@ export default {
         );
       }
 
-      // GET /sync-r2-batch - Sync R2 session dates to KV in batches (respects subrequest limits)
+      // GET /sync-r2-batch - Sync R2 session dates to KV (mark dates WITH sessions as has_session)
+      // This endpoint syncs dates that exist in R2 to KV with status='has_session'
+      // Use this to update KV based on actual parliament sessions saved in R2
       if (url.pathname === '/sync-r2-batch' && request.method === 'GET') {
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
         const limit = parseInt(url.searchParams.get('limit') || '100', 10);
 
-        console.log(`[SyncBatch] Processing offset=${offset}, limit=${limit}`);
+        console.log(`[R2→KV Sync] Starting batch: offset=${offset}, limit=${limit}`);
 
-        // List R2 objects in this batch
+        // List ALL R2 objects first (need total count for progress)
         let allDates: string[] = [];
         let cursor: string | undefined = undefined;
-        let fetched = 0;
 
-        // Fetch R2 objects until we have enough for this batch
+        console.log(`[R2→KV Sync] Fetching all R2 dates...`);
         do {
           const list = await env.R2.list({
             prefix: 'hansard/raw/',
@@ -494,20 +500,19 @@ export default {
           );
 
           allDates.push(...dates);
-          fetched += dates.length;
           cursor = list.truncated ? list.cursor : undefined;
-
-          // Stop if we've fetched enough to cover this batch
-          if (fetched >= offset + limit) break;
         } while (cursor);
+
+        console.log(`[R2→KV Sync] Found ${allDates.length} total R2 dates (sessions)`);
 
         // Extract just the dates for this batch
         const batchDates = allDates.slice(offset, offset + limit);
 
         if (batchDates.length === 0) {
+          console.log(`[R2→KV Sync] Complete - no more dates to process`);
           return new Response(
             JSON.stringify({
-              message: 'Sync complete - no more dates to process',
+              message: 'R2→KV sync complete - all sessions synced',
               offset,
               processed: 0,
               total_sessions: allDates.length,
@@ -519,7 +524,8 @@ export default {
           );
         }
 
-        // Update KV for this batch
+        // Update KV: mark each date as has_session
+        console.log(`[R2→KV Sync] Updating ${batchDates.length} dates in KV...`);
         for (const date of batchDates) {
           await markDateChecked(env.DATES_KV, date, 'has_session', 1);
         }
@@ -528,17 +534,18 @@ export default {
         const processed = Math.min(offset + batchDates.length, totalSessions);
         const complete = processed >= totalSessions;
 
-        console.log(`[SyncBatch] Updated ${batchDates.length} dates, ${processed}/${totalSessions} total`);
+        console.log(`[R2→KV Sync] Batch complete: ${batchDates.length} dates synced, ${processed}/${totalSessions} total (${Math.round(processed/totalSessions*100)}%)`);
 
         return new Response(
           JSON.stringify({
-            message: complete ? 'Sync complete' : 'Batch synced',
+            message: complete ? 'R2→KV sync complete!' : `Batch synced: ${processed}/${totalSessions}`,
             offset,
             processed: batchDates.length,
             total_processed: processed,
             total_sessions: totalSessions,
             complete,
             next_offset: complete ? null : offset + limit,
+            progress_percent: Math.round(processed/totalSessions*100),
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -560,7 +567,20 @@ export default {
         );
       }
 
-      return new Response('Parliament Hansard Scraper\n\nEndpoints:\n- GET /start: Start scraping (one-time)\n- GET /check-today: Check today and yesterday\n- GET /status: Check progress\n- GET /backfill-kv: Populate KV from R2 (one-time)\n- GET /health: Health check', {
+      return new Response(`Parliament Hansard Scraper
+
+Endpoints:
+- GET /start          : Start scraping all dates (idempotent)
+- GET /check-today    : Check recent dates for new sessions
+- GET /status         : Check scraping progress
+
+KV Sync Endpoints:
+- GET /sync-r2-batch  : Sync R2→KV (mark sessions as has_session)
+- GET /backfill-kv    : Mark non-session dates as no_session
+
+Health:
+- GET /health         : Health check
+`, {
         headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
       });
     } catch (error: any) {

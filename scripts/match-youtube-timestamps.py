@@ -78,7 +78,7 @@ def main():
     
     # Load moments (NOTE: using correct year 2025, not 2024)
     print("\nLoading moments...")
-    moments_path = 'test-outputs/22-09-2024/moments-final.json'  # TODO: rename to 2025
+    moments_path = 'test-outputs/22-09-2024/moments-simple.json'  # Using cleaned simple version
     with open(moments_path, 'r') as f:
         moments_data = json.load(f)
     
