@@ -192,10 +192,14 @@ npx tsx test-manual.ts
 video-generator/
 ├── src/
 │   ├── index.ts              # Main Hono app with API endpoints
+│   ├── sora-client.ts        # Sora API client (demo + production modes)
+│   ├── prompts.ts            # Prompt templates and builders
 │   ├── types.ts              # TypeScript type definitions
 │   ├── voice-dna.ts          # Voice DNA configs for all personas
 │   ├── script-generator.ts   # Claude-based script generation
-│   └── index.test.ts         # Vitest integration tests
+│   ├── index.test.ts         # Vitest integration tests
+│   ├── sora-client.test.ts   # Sora client unit tests
+│   └── prompts.test.ts       # Prompt generation tests
 ├── test-manual.ts            # Manual testing script
 ├── wrangler.toml             # Cloudflare Worker configuration
 ├── package.json              # Dependencies and scripts
@@ -244,6 +248,23 @@ See `src/voice-dna.ts` for full definitions.
 
 ## Sora Integration
 
+### Current State: DEMO MODE
+
+The worker currently runs in **demo mode** with placeholder Sora API responses:
+
+- Returns mock video URLs (placeholder content)
+- Simulates realistic timing (2-3 minute generation)
+- Logs the prompts that would be sent to Sora
+- Perfect for frontend development and demonstrations
+
+To enable demo mode, set in `wrangler.toml`:
+```toml
+[vars]
+DEMO_MODE = "true"
+```
+
+### Production Mode (When Sora API is Available)
+
 Videos are generated using OpenAI's Sora API:
 
 - **Format**: 1080x1920 (TikTok vertical)
@@ -256,6 +277,12 @@ The prompt combines:
 2. Persona archetype and style
 3. Generated script
 4. Visual direction
+
+**To switch to production mode:**
+1. Set `DEMO_MODE="false"` in `wrangler.toml`
+2. Uncomment production code in `src/sora-client.ts`
+3. Ensure `OPENAI_API_KEY` has Sora API access
+4. Deploy with `wrangler deploy`
 
 ## Error Handling
 
@@ -274,8 +301,23 @@ The worker handles errors gracefully:
 
 The worker uses async job processing so requests return immediately with a job ID for polling.
 
+## Environment Variables
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `OPENAI_API_KEY` | Yes | OpenAI API key for Sora | - |
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key for Claude script generation | - |
+| `DEMO_MODE` | No | Set to "true" for demo mode, "false" for production | "true" |
+
 ## Future Enhancements
 
+### Next (v1.1 - Production Ready)
+- [ ] Switch to real Sora API when available
+- [ ] Add video caching in R2
+- [ ] Implement retry logic for failed generations
+- [ ] Add webhook notifications for completion
+
+### Future (v2.0)
 - [ ] Batch video generation
 - [ ] Custom voice cloning integration
 - [ ] A/B testing different personas
@@ -283,6 +325,7 @@ The worker uses async job processing so requests return immediately with a job I
 - [ ] Auto-posting to TikTok
 - [ ] Analytics tracking
 - [ ] Cost optimization (caching, reuse)
+- [ ] Multi-language support (Mandarin, Malay, Tamil)
 
 ## Troubleshooting
 

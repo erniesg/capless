@@ -8,6 +8,7 @@ export interface Env {
   VIDEO_JOBS: KVNamespace;
   OPENAI_API_KEY: string;
   ANTHROPIC_API_KEY: string;
+  DEMO_MODE?: string | boolean;
 }
 
 /**

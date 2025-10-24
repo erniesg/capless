@@ -3,6 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2024-10-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Environment variables
+[vars]
+DEMO_MODE = "true"  # Set to "false" when Sora API is available
+
 # R2 bucket for reading moments and storing generated videos
 [[r2_buckets]]
 binding = "R2"
@@ -14,5 +18,12 @@ binding = "VIDEO_JOBS"
 id = "edd74e3222ce46a2aa9b81884a5c2ab1"
 preview_id = "b5bede46738a4d769ee047b2dcbea44e"
 
+# Secrets (set via: wrangler secret put <SECRET_NAME>)
+# OPENAI_API_KEY - Required for Sora API (when available)
+# ANTHROPIC_API_KEY - Required for Claude script generation
+
 [env.development]
 name = "capless-video-generator-dev"
+
+[env.development.vars]
+DEMO_MODE = "true"

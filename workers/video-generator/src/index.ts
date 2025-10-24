@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import OpenAI from 'openai';
 import {
   Env,
   VideoGenerationRequestSchema,
@@ -13,6 +12,8 @@ import {
 } from './types';
 import { generateScript } from './script-generator';
 import { VOICE_DNA_CONFIGS } from './voice-dna';
+import { createSoraClient } from './sora-client';
+import { buildSoraPrompt } from './prompts';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -259,8 +260,8 @@ async function generateVideoAsync(
     });
 
     // 2. Generate video with Sora
-    console.log(`[${jobId}] Calling Sora API...`);
-    const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+    console.log(`[${jobId}] Initializing Sora client...`);
+    const soraClient = createSoraClient(env);
 
     // Construct YouTube link with timestamp
     const youtubeLink = `https://www.youtube.com/watch?v=${moment.transcript_id}`;
@@ -271,32 +272,28 @@ async function generateVideoAsync(
 
     console.log(`[${jobId}] Sora prompt:`, soraPrompt);
 
-    // Call Sora API (using beta.chat.completions for now as videos API is in limited beta)
-    // Note: Replace with actual videos.generate when Sora API is available
-    // const video = await openai.videos.generate({
-    //   model: 'sora-1.0',
-    //   prompt: soraPrompt,
-    //   size: '1080x1920',
-    // });
+    // Generate video using Sora client
+    console.log(`[${jobId}] Calling Sora API for video generation...`);
+    const videoResult = await soraClient.generateVideo(soraPrompt, persona, {
+      size: '1080x1920',
+      duration: 15,
+    });
 
-    // For now, we'll simulate the video generation
-    // In production, uncomment above and remove this placeholder
-    const videoId = `sora-${Date.now()}`;
-    const videoUrl = `https://placeholder-video-url/${videoId}.mp4`;
-
-    console.log(`[${jobId}] Sora generation complete:`, videoId);
+    console.log(`[${jobId}] Sora generation complete:`, videoResult.sora_generation_id);
 
     // Update job with completion
     await updateJob(jobId, env, {
       status: 'completed',
-      sora_generation_id: videoId,
-      video_url: videoUrl,
+      sora_generation_id: videoResult.sora_generation_id,
+      video_url: videoResult.video_url,
       youtube_link: youtubeLink,
       youtube_timestamp: youtubeTimestamp,
       completed_at: new Date().toISOString(),
     });
 
     console.log(`[${jobId}] Video generation complete!`);
+    console.log(`[${jobId}] Video URL: ${videoResult.video_url}`);
+    console.log(`[${jobId}] Thumbnail URL: ${videoResult.thumbnail_url}`);
   } catch (error) {
     console.error(`[${jobId}] Error generating video:`, error);
 
@@ -331,42 +328,6 @@ async function updateJob(
   } catch (error) {
     console.error('Error updating job:', error);
   }
-}
-
-/**
- * Build Sora prompt from script and moment
- */
-function buildSoraPrompt(
-  moment: Moment,
-  script: string,
-  persona: Persona
-): string {
-  const voiceDNA = VOICE_DNA_CONFIGS[persona];
-
-  return `Create a 10-15 second TikTok-style reaction video for this political moment:
-
-MOMENT CONTEXT:
-Speaker: ${moment.speaker}
-Quote: "${moment.quote}"
-Topic: ${moment.topic}
-Emotional Tone: ${moment.emotional_tone}
-
-PERSONA: ${voiceDNA.archetype}
-Archetype: ${voiceDNA.archetype}
-Driving Force: ${voiceDNA.driving_force}
-
-SCRIPT TO VISUALIZE:
-${script}
-
-VIDEO STYLE:
-- Format: 1080x1920 (TikTok vertical)
-- Duration: 10-15 seconds
-- Style: Modern, dynamic, attention-grabbing
-- Visual pacing: Match the script's emotional beats
-- Lighting: Bright, engaging
-- Background: Clean, uncluttered
-
-Create a video that brings this script to life with appropriate visuals, pacing, and energy.`;
 }
 
 export default app;

@@ -1,0 +1,45 @@
+name = "parliament-chat"
+main = "src/index.ts"
+compatibility_date = "2025-01-20"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment bindings
+
+# R2 bucket for loading Hansard transcripts
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "capless"
+preview_bucket_name = "capless-preview"
+
+# Vectorize index for embeddings
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "parliament-chat"
+
+# KV for tracking embedded sessions
+[[kv_namespaces]]
+binding = "KV"
+id = "parliament_chat_kv_prod"  # Replace with your KV namespace ID
+preview_id = "parliament_chat_kv_preview"  # Replace with preview KV namespace ID
+
+# Cloudflare Workers AI for embeddings (optional)
+[ai]
+binding = "AI"
+
+# Environment variables
+# Set secrets via: wrangler secret put ANTHROPIC_API_KEY
+# Set secrets via: wrangler secret put OPENAI_API_KEY
+
+[vars]
+ENVIRONMENT = "production"
+
+[dev]
+port = 8788
+
+# Production environment
+[env.production]
+name = "parliament-chat"
+
+# Development environment
+[env.development]
+name = "parliament-chat-dev"
