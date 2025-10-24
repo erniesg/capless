@@ -64,8 +64,15 @@ while [ "$complete" != "true" ]; do
   # Update counter
   total_synced=$((total_synced + processed))
 
+  # Calculate progress percentage (avoid division by zero)
+  if [ "$total_sessions" -gt 0 ]; then
+    progress_pct=$((total_processed * 100 / total_sessions))
+  else
+    progress_pct=0
+  fi
+
   echo "  ✓ Synced: $processed dates"
-  echo "  Progress: $total_processed / $total_sessions ($(awk "BEGIN {printf \"%.1f\", ($total_processed/$total_sessions)*100}")%)"
+  echo "  Progress: $total_processed / $total_sessions ($progress_pct%)"
   echo ""
 
   # Break if complete

@@ -1,9 +1,14 @@
 #!/bin/bash
 
-# Backfill KV with no_session for all dates not in R2
-# This script writes KV entries locally to avoid Worker subrequest limits
+# Mark dates WITHOUT sessions as no_session in KV
+# This is for dates NOT in R2 (dates without parliament sessions)
+#
+# NOTE: If you want to sync dates WITH sessions (dates in R2), use sync-r2-to-kv.sh instead
+#
+# This script uses wrangler CLI to write directly to KV (avoids Worker limits)
 
-echo "=== KV Backfill Script ==="
+echo "=== No-Session KV Backfill (CLI) ==="
+echo "Marking dates WITHOUT parliament sessions as no_session"
 echo ""
 
 KV_NAMESPACE_ID="02616e8644a44f02ae8e1cb90c40cffe"
