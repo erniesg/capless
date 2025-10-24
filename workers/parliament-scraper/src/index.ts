@@ -469,6 +469,83 @@ export default {
         );
       }
 
+      // GET /sync-r2-batch - Sync R2 session dates to KV in batches (respects subrequest limits)
+      if (url.pathname === '/sync-r2-batch' && request.method === 'GET') {
+        const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+        const limit = parseInt(url.searchParams.get('limit') || '100', 10);
+
+        console.log(`[SyncBatch] Processing offset=${offset}, limit=${limit}`);
+
+        // List R2 objects in this batch
+        let allDates: string[] = [];
+        let cursor: string | undefined = undefined;
+        let fetched = 0;
+
+        // Fetch R2 objects until we have enough for this batch
+        do {
+          const list = await env.R2.list({
+            prefix: 'hansard/raw/',
+            limit: 1000,
+            cursor: cursor,
+          });
+
+          const dates = list.objects.map(obj =>
+            obj.key.replace('hansard/raw/', '').replace('.json', '')
+          );
+
+          allDates.push(...dates);
+          fetched += dates.length;
+          cursor = list.truncated ? list.cursor : undefined;
+
+          // Stop if we've fetched enough to cover this batch
+          if (fetched >= offset + limit) break;
+        } while (cursor);
+
+        // Extract just the dates for this batch
+        const batchDates = allDates.slice(offset, offset + limit);
+
+        if (batchDates.length === 0) {
+          return new Response(
+            JSON.stringify({
+              message: 'Sync complete - no more dates to process',
+              offset,
+              processed: 0,
+              total_sessions: allDates.length,
+              complete: true,
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
+        // Update KV for this batch
+        for (const date of batchDates) {
+          await markDateChecked(env.DATES_KV, date, 'has_session', 1);
+        }
+
+        const totalSessions = allDates.length;
+        const processed = Math.min(offset + batchDates.length, totalSessions);
+        const complete = processed >= totalSessions;
+
+        console.log(`[SyncBatch] Updated ${batchDates.length} dates, ${processed}/${totalSessions} total`);
+
+        return new Response(
+          JSON.stringify({
+            message: complete ? 'Sync complete' : 'Batch synced',
+            offset,
+            processed: batchDates.length,
+            total_processed: processed,
+            total_sessions: totalSessions,
+            complete,
+            next_offset: complete ? null : offset + limit,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
       // GET /health
       if (url.pathname === '/health') {
         return new Response(
