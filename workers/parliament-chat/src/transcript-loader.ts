@@ -104,8 +104,10 @@ function extractSegmentsFromContent(
   const segments: TranscriptSegment[] = [];
 
   // Remove HTML tags but preserve structure for speaker detection
-  // Pattern: <p><strong>Name:</strong> Text</p>
-  const speakerPattern = /<p[^>]*>(?:<strong>([^<]+?):<\/strong>)?\s*([^<]+?)(?:<\/p>|$)/gi;
+  // Pattern handles both formats:
+  // 1. <p><strong>Name:</strong> Text</p> (old format - colon inside strong)
+  // 2. <p><strong>Name</strong>: Text</p> (new format - colon outside strong)
+  const speakerPattern = /<p[^>]*><strong>([^<:]+?)(?::)?<\/strong>(?::)?\s*([^<]+?)(?:<\/p>|$)/gi;
 
   let match;
   while ((match = speakerPattern.exec(content)) !== null) {
