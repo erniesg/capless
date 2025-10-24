@@ -111,7 +111,7 @@ export default {
     }
 
     try {
-      // GET /start - Start scraping from beginning
+      // GET /start - Start scraping from beginning (IDEMPOTENT)
       if (url.pathname === '/start' && request.method === 'GET') {
         const startDate = new Date('1955-04-22'); // First parliament sitting
         const endDate = new Date(); // Today
@@ -121,9 +121,48 @@ export default {
         const allDates = generateDateRange(startDate, endDate);
         console.log(`[Start] Total dates to process: ${allDates.length}`);
 
-        // Enqueue all dates without checking R2 (queue consumer will skip existing)
+        // Get existing dates from R2 to skip them (idempotency)
+        console.log(`[Start] Checking R2 for existing dates...`);
+        const existingDates = new Set<string>();
+        let cursor: string | undefined = undefined;
+
+        do {
+          const list = await env.R2.list({
+            prefix: 'hansard/raw/',
+            limit: 1000,
+            cursor: cursor,
+          });
+
+          list.objects.forEach(obj => {
+            const date = obj.key.replace('hansard/raw/', '').replace('.json', '');
+            existingDates.add(date);
+          });
+
+          cursor = list.truncated ? list.cursor : undefined;
+        } while (cursor);
+
+        console.log(`[Start] Found ${existingDates.size} existing dates in R2`);
+
+        // Only enqueue dates that DON'T exist in R2
+        const datesToEnqueue = allDates.filter(date => !existingDates.has(date));
+        console.log(`[Start] Need to enqueue ${datesToEnqueue.length} new dates`);
+
+        if (datesToEnqueue.length === 0) {
+          return new Response(
+            JSON.stringify({
+              message: 'All dates already processed',
+              total_dates: allDates.length,
+              already_scraped: existingDates.size,
+              enqueued: 0,
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
         // Use sendBatch to avoid "Too many API requests" error (1000 subrequest limit)
-        const messages = allDates.map(date => ({
+        const messages = datesToEnqueue.map(date => ({
           body: {
             date,
             attempt: 0,
@@ -133,7 +172,7 @@ export default {
         let enqueued = 0;
         const batchSize = 100;
 
-        // Send in batches of 100 (25,754 dates = ~258 batch calls, well under 1000 limit)
+        // Send in batches of 100
         for (let i = 0; i < messages.length; i += batchSize) {
           const batch = messages.slice(i, i + batchSize);
           await env.DATES_QUEUE.sendBatch(batch);
@@ -144,8 +183,9 @@ export default {
 
         return new Response(
           JSON.stringify({
-            message: 'Scraping started',
+            message: 'Scraping started (idempotent)',
             total_dates: allDates.length,
+            already_scraped: existingDates.size,
             enqueued,
             start_date: '22-04-1955',
             end_date: new Date().toISOString().split('T')[0],
@@ -160,7 +200,6 @@ export default {
       if (url.pathname === '/status' && request.method === 'GET') {
         const startDate = new Date('1955-04-22');
         const endDate = new Date();
-        const totalDates = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
         // Count ALL scraped dates in R2 with pagination
         let scrapedCount = 0;
@@ -185,7 +224,7 @@ export default {
         } while (cursor);
 
         // Find latest date from ALL R2 objects
-        let lastDateChecked = 'Unknown';
+        let latestSession = 'None';
         if (allDates.length > 0) {
           const sortedDates = allDates.sort((a, b) => {
             // Sort by date (DD-MM-YYYY format)
@@ -195,24 +234,17 @@ export default {
             const dateB = new Date(yearB, monthB - 1, dayB);
             return dateB.getTime() - dateA.getTime();
           });
-          lastDateChecked = sortedDates[0] || 'Unknown';
+          latestSession = sortedDates[0] || 'None';
         }
-
-        // Estimate total expected sessions based on parliamentary history
-        // Parliament sits ~100-120 days/year, average ~110 days/year over 70 years
-        const yearsElapsed = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
-        const estimatedTotalSessions = Math.round(yearsElapsed * 110);
-        const estimatedProgress = estimatedTotalSessions > 0
-          ? `${((scrapedCount / estimatedTotalSessions) * 100).toFixed(1)}%`
-          : '0%';
 
         return new Response(
           JSON.stringify({
-            total_dates: totalDates,
-            sessions_found: scrapedCount,
-            estimated_total_sessions: estimatedTotalSessions,
-            estimated_progress: estimatedProgress,
-            latest_session_date: lastDateChecked,
+            sessions_scraped: scrapedCount,
+            latest_session: latestSession,
+            scraping_period: {
+              from: '22-04-1955',
+              to: endDate.toISOString().split('T')[0],
+            },
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
