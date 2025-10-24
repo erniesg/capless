@@ -198,14 +198,21 @@ export default {
           lastDateChecked = sortedDates[0] || 'Unknown';
         }
 
+        // Estimate total expected sessions based on parliamentary history
+        // Parliament sits ~100-120 days/year, average ~110 days/year over 70 years
+        const yearsElapsed = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+        const estimatedTotalSessions = Math.round(yearsElapsed * 110);
+        const estimatedProgress = estimatedTotalSessions > 0
+          ? `${((scrapedCount / estimatedTotalSessions) * 100).toFixed(1)}%`
+          : '0%';
+
         return new Response(
           JSON.stringify({
             total_dates: totalDates,
-            scraped: scrapedCount,
-            remaining: totalDates - scrapedCount,
-            progress: `${((scrapedCount / totalDates) * 100).toFixed(2)}%`,
-            last_date_scraped: lastDateChecked,
-            note: 'Progress shows sessions found. Queue processes ~600 dates/min including skips.',
+            sessions_found: scrapedCount,
+            estimated_total_sessions: estimatedTotalSessions,
+            estimated_progress: estimatedProgress,
+            latest_session_date: lastDateChecked,
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
