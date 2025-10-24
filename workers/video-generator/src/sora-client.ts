@@ -181,7 +181,7 @@ export class SoraClient {
     }
 
     try {
-      const duration = options.duration || 8; // Veo 3.1 supports 4, 8, or 16 seconds
+      const duration = options.duration || 8; // Veo 3.1 supports 4, 6, or 8 seconds
       const aspectRatio = options.size === '1024x1792' ? '9:16' : '16:9'; // Vertical or horizontal
 
       console.log('[VeoClient] Generating video with Veo 3.1 via Replicate');

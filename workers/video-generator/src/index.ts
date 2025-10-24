@@ -89,7 +89,7 @@ app.post('/api/video/generate', async (c) => {
     const response: VideoGenerationResponse = {
       job_id: jobId,
       status: 'processing',
-      estimated_time_seconds: 180, // Veo 3.1 typically takes 2-3 minutes for 8-second videos
+      estimated_time_seconds: 150, // Veo 3.1 typically takes 2-3 minutes for 8-second videos
       poll_url: `/api/video/status/${jobId}`,
     };
 
@@ -290,8 +290,8 @@ async function generateVideoAsync(
     // Generate video using Sora/Veo client
     console.log(`[${jobId}] Calling video API for generation...`);
     const videoResult = await soraClient.generateVideo(videoPrompt, persona, {
-      size: '1024x1792',  // Sora 2 vertical format (9:16 aspect ratio)
-      duration: 15,
+      size: '1024x1792',  // Vertical format (9:16 aspect ratio)
+      duration: 8,  // Veo 3.1 supports 4, 6, or 8 seconds
     });
 
     console.log(`[${jobId}] Sora generation complete:`, videoResult.sora_generation_id);
