@@ -8,7 +8,7 @@
  * 4. Generate answer with LLM + citations
  */
 
-import { generateText } from 'ai';
+import { generateText, streamText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import type { Env, ChatResponse, Citation, VectorSearchResult } from './types';
@@ -150,6 +150,84 @@ Please provide a clear, concise answer based on the parliamentary transcript con
   } catch (error) {
     console.error('[Chat] Error generating answer:', error);
     throw new Error(`Failed to generate answer: ${error}`);
+  }
+}
+
+/**
+ * Generate streaming answer using LLM with RAG context
+ * Returns a ReadableStream for real-time token streaming
+ */
+export async function generateAnswerStream(
+  env: Env,
+  question: string,
+  context: string,
+  sessionDate: string
+) {
+  console.log(`[Chat] Generating streaming answer for question: "${question}"`);
+
+  const systemPrompt = `You are a helpful assistant that answers questions about Singapore Parliamentary sessions.
+
+You are provided with excerpts from the parliamentary transcript for session ${sessionDate}.
+
+INSTRUCTIONS:
+1. Answer the question based ONLY on the provided context
+2. If the context doesn't contain enough information, say so clearly
+3. Be concise and factual
+4. Include relevant speaker names when available
+5. DO NOT make up information or hallucinate facts
+6. If multiple speakers discussed the topic, mention them
+7. Use direct quotes when they strengthen your answer
+
+CONTEXT FROM PARLIAMENTARY TRANSCRIPT:
+${context}`;
+
+  const userPrompt = `Question: ${question}
+
+Please provide a clear, concise answer based on the parliamentary transcript context provided.`;
+
+  try {
+    // Try Anthropic Claude Haiku 4.5 (fast + cheap for RAG)
+    if (env.ANTHROPIC_API_KEY) {
+      console.log(`[Chat] Using Anthropic streaming with Claude Haiku 4.5`);
+      const anthropic = createAnthropic({
+        apiKey: env.ANTHROPIC_API_KEY,
+      });
+      const model = anthropic('claude-haiku-4-5-20251001');
+
+      const result = await streamText({
+        model,
+        system: systemPrompt,
+        prompt: userPrompt,
+        maxTokens: 500,
+        temperature: 0.3,
+      });
+
+      return { stream: result.toTextStreamResponse(), model: 'claude-haiku-4-5' };
+    }
+
+    // Fallback to OpenAI
+    if (env.OPENAI_API_KEY) {
+      console.log(`[Chat] Using OpenAI streaming with GPT-4o-mini`);
+      const openai = createOpenAI({
+        apiKey: env.OPENAI_API_KEY,
+      });
+      const model = openai('gpt-4o-mini');
+
+      const result = await streamText({
+        model,
+        system: systemPrompt,
+        prompt: userPrompt,
+        maxTokens: 500,
+        temperature: 0.3,
+      });
+
+      return { stream: result.toTextStreamResponse(), model: 'gpt-4o-mini' };
+    }
+
+    throw new Error('No LLM provider available. Set ANTHROPIC_API_KEY or OPENAI_API_KEY.');
+  } catch (error) {
+    console.error('[Chat] Error generating streaming answer:', error);
+    throw new Error(`Failed to generate streaming answer: ${error}`);
   }
 }
 

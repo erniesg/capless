@@ -17,7 +17,7 @@ import {
   EmbedSessionRequestSchema,
   BulkEmbedRequestSchema,
 } from './types';
-import { chat } from './chat-service';
+import { chat, vectorSearch, generateAnswerStream } from './chat-service';
 import {
   embedChunks,
   storeEmbeddings,
@@ -106,6 +106,68 @@ export default {
         const response = await chat(env, question, session_date, max_results);
 
         return jsonResponse(response);
+      }
+
+      // POST /chat-stream - Ask a question with streaming response
+      if (url.pathname === '/chat-stream' && request.method === 'POST') {
+        const body = await request.json();
+
+        // Validate request
+        const validation = ChatRequestSchema.safeParse(body);
+        if (!validation.success) {
+          return errorResponse(
+            `Invalid request: ${validation.error.errors.map(e => e.message).join(', ')}`,
+            400
+          );
+        }
+
+        const { session_date, question, max_results } = validation.data;
+
+        // Check if session is embedded
+        const status = await isSessionEmbedded(env.KV, session_date);
+        if (!status.embedded) {
+          return errorResponse(
+            `Session ${session_date} is not embedded yet. Use POST /embed-session to embed it first.`,
+            404
+          );
+        }
+
+        // Step 1: Vector search for relevant chunks
+        const searchResults = await vectorSearch(env, question, session_date, max_results || 5);
+
+        if (searchResults.length === 0) {
+          return jsonResponse({
+            error: true,
+            message: `I couldn't find any relevant information in the ${session_date} parliamentary session transcript.`,
+          });
+        }
+
+        // Step 2: Build context from search results
+        const contextParts = searchResults.map((result, index) => {
+          const speaker = result.metadata.speaker ? `[${result.metadata.speaker}]` : '[Unknown Speaker]';
+          const section = result.metadata.section_title ? `\nSection: ${result.metadata.section_title}` : '';
+
+          return `--- Source ${index + 1} (Confidence: ${(result.score * 100).toFixed(1)}%) ---
+${speaker}${section}
+${result.metadata.text}
+`;
+        });
+        const context = contextParts.join('\n');
+
+        // Step 3: Generate streaming answer
+        const { stream, model } = await generateAnswerStream(env, question, context, session_date);
+
+        // Return the stream with CORS headers
+        const response = new Response(stream.body, {
+          headers: {
+            ...CORS_HEADERS,
+            'Content-Type': 'text/plain; charset=utf-8',
+            'X-Model-Used': model,
+            'X-Citations-Count': searchResults.length.toString(),
+          },
+        });
+
+        return response;
       }
 
       // POST /embed-session - Embed a single session

@@ -18,31 +18,66 @@ Speaker: ${moment.speaker}
 Quote: "${moment.quote}"
 Context: ${moment.why_viral}
 Topic: ${moment.topic}
-Emotional Tone: ${moment.emotional_tone}
-Target Demo: ${moment.target_demographic}
 
 Generate a 10-15 second TikTok reaction script (100-150 words).`;
 
+  // Use Tool Use pattern for structured output
+  const tools: Anthropic.Tool[] = [
+    {
+      name: 'generate_script',
+      description: 'Generate a TikTok script with hook, main content, call-to-action, and hashtags',
+      input_schema: {
+        type: 'object',
+        properties: {
+          script: {
+            type: 'string',
+            description: 'The full TikTok script text (100-150 words)'
+          },
+          hook: {
+            type: 'string',
+            description: 'The opening hook line (first 3 seconds)'
+          },
+          cta: {
+            type: 'string',
+            description: 'Call to action or final zinger'
+          },
+          hashtags: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Array of relevant hashtags (without # symbol)'
+          }
+        },
+        required: ['script', 'hook', 'cta', 'hashtags']
+      }
+    }
+  ];
+
   const message = await claude.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
-    max_tokens: 500,
+    model: 'claude-sonnet-4-5-20250929',
+    max_tokens: 1000,
     messages: [{
       role: 'user',
       content: prompt
-    }]
+    }],
+    tools,
+    tool_choice: { type: 'tool', name: 'generate_script' },
+    temperature: 0
   });
 
-  const responseText = message.content[0].type === 'text'
-    ? message.content[0].text
-    : '';
+  // Extract tool use response
+  const toolUse = message.content.find(block => block.type === 'tool_use');
 
-  // Parse JSON response
-  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('Failed to parse script JSON from Claude response');
+  if (!toolUse || toolUse.type !== 'tool_use') {
+    console.error('Unexpected response from Claude:', message.content);
+    throw new Error('Claude did not return a tool_use response');
   }
 
-  const parsed = JSON.parse(jsonMatch[0]);
+  const parsed = toolUse.input as {
+    script: string;
+    hook: string;
+    cta: string;
+    hashtags: string[];
+  };
 
   // Calculate word count
   const wordCount = parsed.script.split(/\s+/).length;

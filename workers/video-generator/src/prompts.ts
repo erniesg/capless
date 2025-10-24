@@ -172,6 +172,43 @@ Make it engaging, authentic, and viral-worthy with appropriate visual style and 
 }
 
 /**
+ * Build a sanitized prompt that avoids content moderation filters
+ * Just a person speaking their reaction on camera - no political context
+ */
+export function buildSanitizedPrompt(
+  script: string,
+  persona: Persona,
+  duration: number = 15
+): string {
+  const personaDescriptions: Record<Persona, string> = {
+    gen_z: 'Gen Z content creator with trendy, energetic style',
+    kopitiam_uncle: 'older Singaporean man in casual attire, warm and friendly',
+    auntie: 'middle-aged woman with animated, caring demeanor',
+    attenborough: 'nature documentary narrator with calm, observational tone',
+    ai_decide: 'content creator',
+  };
+
+  const settings: Record<Persona, string> = {
+    gen_z: 'modern bedroom or coffee shop with ring light',
+    kopitiam_uncle: 'coffee shop or casual outdoor setting',
+    auntie: 'home kitchen or community space',
+    attenborough: 'studio or natural backdrop',
+    ai_decide: 'casual setting',
+  };
+
+  // Shorten script to first 150 characters to stay concise
+  const shortScript = script.length > 150 ? script.substring(0, 150) + '...' : script;
+
+  return `Create a ${duration}-second vertical TikTok video (1080x1920) showing ${personaDescriptions[persona]} speaking directly to camera in ${settings[persona]}.
+
+The person says:
+"${shortScript}"
+
+Style: Authentic social media content, engaging and natural delivery.
+Format: Vertical 9:16, 30fps, HD quality.`;
+}
+
+/**
  * Build a prompt for persona selection (when persona = 'ai_decide')
  */
 export function buildPersonaSelectionPrompt(moment: Moment): string {

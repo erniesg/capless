@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import Replicate from 'replicate';
 import { Env, Persona } from './types';
 
 /**
@@ -43,11 +44,15 @@ export interface VideoGenerationResult {
  */
 export class SoraClient {
   private openai: OpenAI;
+  private replicate: Replicate | null;
   private demoMode: boolean;
+  private useVeo: boolean;
 
-  constructor(apiKey: string, demoMode: boolean = true) {
+  constructor(apiKey: string, replicateToken: string | undefined, demoMode: boolean = true, useVeo: boolean = true) {
     this.openai = new OpenAI({ apiKey });
+    this.replicate = replicateToken ? new Replicate({ auth: replicateToken }) : null;
     this.demoMode = demoMode;
+    this.useVeo = useVeo;
   }
 
   /**
@@ -67,68 +72,146 @@ export class SoraClient {
       return this.mockGenerateVideo(prompt, persona, options);
     }
 
-    // PRODUCTION CODE: Uncomment when Sora API is available
-    // Note: This is based on expected API structure - actual API may differ
-    /*
+    // Use Veo 3.1 via Replicate if configured
+    if (this.useVeo && this.replicate) {
+      return this.generateVideoWithVeo(prompt, persona, options);
+    }
+
+    // PRODUCTION CODE: Real Sora 2 API integration
     try {
-      const request: SoraGenerationRequest = {
-        model: options.model || 'sora-1.0',
-        prompt,
-        size: options.size || '1080x1920',
-        duration: options.duration || 15,
-        quality: options.quality || 'hd',
-      };
+      const model = options.model || 'sora-2';
+      const size = options.size || '1024x1792';  // Sora 2 vertical format (9:16 aspect ratio)
+      const duration = options.duration || 15;
 
-      console.log('[SoraClient] Generating video with prompt:', prompt);
-      console.log('[SoraClient] Request:', request);
+      console.log('[SoraClient] Generating video with Sora 2');
+      console.log('[SoraClient] Model:', model);
+      console.log('[SoraClient] Size:', size);
+      console.log('[SoraClient] Duration:', duration);
+      console.log('[SoraClient] Prompt length:', prompt.length);
 
-      // Expected API call (structure may change)
-      const response = await this.openai.videos.generate(request);
+      // Create video request
+      const response = await fetch('https://api.openai.com/v1/videos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.openai.apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          size,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Sora API error: ${response.status} ${errorText}`);
+      }
+
+      const videoJob = await response.json() as { video_id: string };
+      const videoId = videoJob.video_id;
+
+      console.log('[SoraClient] Video job created:', videoId);
 
       // Poll for completion
-      let generationStatus = response.status;
       let attempts = 0;
-      const maxAttempts = 60; // 5 minutes at 5-second intervals
+      const maxAttempts = 120; // 10 minutes at 5-second intervals
+      let videoStatus: any;
 
-      while (generationStatus === 'queued' || generationStatus === 'processing') {
-        if (attempts >= maxAttempts) {
-          throw new Error('Video generation timeout - exceeded maximum wait time');
-        }
-
+      while (attempts < maxAttempts) {
         await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
 
-        const statusResponse = await this.openai.videos.retrieve(response.id);
-        generationStatus = statusResponse.status;
+        const statusResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
+          headers: {
+            'Authorization': `Bearer ${this.openai.apiKey}`,
+          },
+        });
+
+        if (!statusResponse.ok) {
+          throw new Error(`Failed to check video status: ${statusResponse.status}`);
+        }
+
+        videoStatus = await statusResponse.json();
         attempts++;
 
-        console.log(`[SoraClient] Generation status: ${generationStatus} (attempt ${attempts}/${maxAttempts})`);
+        console.log(`[SoraClient] Status: ${videoStatus.status} (attempt ${attempts}/${maxAttempts})`);
+
+        if (videoStatus.status === 'completed') {
+          break;
+        }
+
+        if (videoStatus.status === 'failed') {
+          throw new Error(`Video generation failed: ${videoStatus.error || 'Unknown error'}`);
+        }
       }
 
-      if (generationStatus === 'failed') {
-        throw new Error(`Video generation failed: ${response.error || 'Unknown error'}`);
+      if (attempts >= maxAttempts) {
+        throw new Error('Video generation timeout - exceeded maximum wait time');
       }
 
-      // Calculate estimated completion time
-      const estimatedCompletion = new Date();
-      estimatedCompletion.setMinutes(estimatedCompletion.getMinutes() + 3);
+      // Download video content
+      const contentUrl = `https://api.openai.com/v1/videos/${videoId}/content`;
+      console.log('[SoraClient] Video generation complete!');
+      console.log('[SoraClient] Content URL:', contentUrl);
 
       return {
-        video_url: response.video_url!,
-        thumbnail_url: response.thumbnail_url || this.generateThumbnailUrl(response.video_url!),
-        duration: response.duration || 15,
+        video_url: contentUrl,
+        thumbnail_url: this.generateThumbnailUrl(contentUrl),
+        duration,
         persona,
         generation_status: 'complete',
-        sora_generation_id: response.id,
-        estimated_completion: estimatedCompletion.toISOString(),
+        sora_generation_id: videoId,
       };
     } catch (error) {
       console.error('[SoraClient] Error generating video:', error);
       throw error;
     }
-    */
+  }
 
-    // Fallback to mock for now
-    return this.mockGenerateVideo(prompt, persona, options);
+  /**
+   * Generate video using Veo 3.1 via Replicate
+   */
+  private async generateVideoWithVeo(
+    prompt: string,
+    persona: Persona,
+    options: Partial<SoraGenerationRequest> = {}
+  ): Promise<VideoGenerationResult> {
+    if (!this.replicate) {
+      throw new Error('Replicate client not initialized');
+    }
+
+    try {
+      const duration = options.duration || 15;
+
+      console.log('[VeoClient] Generating video with Veo 3.1 via Replicate');
+      console.log('[VeoClient] Model: google/veo-3.1');
+      console.log('[VeoClient] Duration:', duration);
+      console.log('[VeoClient] Prompt length:', prompt.length);
+
+      // Call Replicate Veo 3.1 API
+      const output = await this.replicate.run('google/veo-3.1', {
+        input: {
+          prompt,
+        },
+      }) as any;
+
+      console.log('[VeoClient] Video generation complete!');
+
+      // Extract video URL from Replicate output
+      const videoUrl = typeof output === 'string' ? output : output.url?.() || output[0];
+
+      return {
+        video_url: videoUrl,
+        thumbnail_url: this.generateThumbnailUrl(videoUrl),
+        duration,
+        persona,
+        generation_status: 'complete',
+        sora_generation_id: `veo-${Date.now()}-${persona}`,
+      };
+    } catch (error) {
+      console.error('[VeoClient] Error generating video:', error);
+      throw error;
+    }
   }
 
   /**
@@ -269,10 +352,16 @@ export class SoraClient {
 /**
  * Factory function to create SoraClient
  */
-export function createSoraClient(env: Env, demoMode?: boolean): SoraClient {
+export function createSoraClient(env: Env, demoMode?: boolean, useVeo?: boolean): SoraClient {
   const isDemoMode = demoMode ?? (env.DEMO_MODE === 'true' || env.DEMO_MODE === true);
+  const shouldUseVeo = useVeo ?? (env.USE_VEO === 'true' || env.USE_VEO === true);
 
   console.log(`[SoraClient] Initializing in ${isDemoMode ? 'DEMO' : 'PRODUCTION'} mode`);
+  console.log(`[SoraClient] Video provider: ${shouldUseVeo ? 'Veo 3.1' : 'Sora 2'}`);
 
-  return new SoraClient(env.OPENAI_API_KEY, isDemoMode);
+  // In demo mode, use a dummy API key since we won't actually call the API
+  const apiKey = isDemoMode ? 'sk-demo-key' : env.OPENAI_API_KEY;
+  const replicateToken = env.REPLICATE_API_TOKEN;
+
+  return new SoraClient(apiKey, replicateToken, isDemoMode, shouldUseVeo);
 }

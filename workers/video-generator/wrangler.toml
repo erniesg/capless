@@ -5,7 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 # Environment variables
 [vars]
-DEMO_MODE = "true"  # Set to "false" when Sora API is available
+DEMO_MODE = "false"  # Production mode - use real video API
+USE_VEO = "true"     # Use Veo 3.1 via Replicate (set to false to use Sora 2)
 
 # R2 bucket for reading moments and storing generated videos
 [[r2_buckets]]
@@ -21,6 +22,7 @@ preview_id = "b5bede46738a4d769ee047b2dcbea44e"
 # Secrets (set via: wrangler secret put <SECRET_NAME>)
 # OPENAI_API_KEY - Required for Sora API (when available)
 # ANTHROPIC_API_KEY - Required for Claude script generation
+# REPLICATE_API_TOKEN - Required for Veo 3.1 via Replicate
 
 [env.development]
 name = "capless-video-generator-dev"

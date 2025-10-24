@@ -1,0 +1,33 @@
+{
+  "transcript_id": "parliament-22-09-2024",
+  "session_date": "22-09-2024",
+  "moments": [
+    {
+      "moment_id": "demo-moment-1",
+      "quote": "The alterations were done to cover up the incompleteness of documents but the contents were factual.",
+      "speaker": "Minister (PUB)",
+      "timestamp_start": "01:29:46",
+      "virality_score": 10,
+      "why_viral": "Minimizes document falsification - sounds like cover-up language",
+      "topic": "Public Sector Integrity"
+    },
+    {
+      "moment_id": "demo-moment-2", 
+      "quote": "It is challenging for the government to allocate COEs based on needs. No matter how one draws the line, there will always be people who believe they are more deserving.",
+      "speaker": "Transport Minister",
+      "timestamp_start": "09:20:34",
+      "virality_score": 10,
+      "why_viral": "Admits difficulty but uses it as reason for inaction - excuse-making rather than problem-solving",
+      "topic": "COE policy and fairness"
+    },
+    {
+      "moment_id": "demo-moment-3",
+      "quote": "The market mechanism is transparent and allows government to channel COE revenues to benefit the wider public.",
+      "speaker": "Transport Minister", 
+      "timestamp_start": "09:24:37",
+      "virality_score": 10,
+      "why_viral": "Defends market-based system as fair while acknowledging it prices out families - contradictory logic",
+      "topic": "COE policy and market mechanism"
+    }
+  ]
+}

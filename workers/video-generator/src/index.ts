@@ -13,7 +13,6 @@ import {
 import { generateScript } from './script-generator';
 import { VOICE_DNA_CONFIGS } from './voice-dna';
 import { createSoraClient } from './sora-client';
-import { buildSoraPrompt } from './prompts';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -267,15 +266,16 @@ async function generateVideoAsync(
     const youtubeLink = `https://www.youtube.com/watch?v=${moment.transcript_id}`;
     const youtubeTimestamp = moment.timestamp_start;
 
-    // Build Sora prompt
-    const soraPrompt = buildSoraPrompt(moment, script.script, persona);
+    // Build sanitized prompt (avoids political content moderation)
+    const { buildSanitizedPrompt } = await import('./prompts');
+    const videoPrompt = buildSanitizedPrompt(script.script, persona, 15);
 
-    console.log(`[${jobId}] Sora prompt:`, soraPrompt);
+    console.log(`[${jobId}] Video prompt:`, videoPrompt);
 
-    // Generate video using Sora client
-    console.log(`[${jobId}] Calling Sora API for video generation...`);
-    const videoResult = await soraClient.generateVideo(soraPrompt, persona, {
-      size: '1080x1920',
+    // Generate video using Sora/Veo client
+    console.log(`[${jobId}] Calling video API for generation...`);
+    const videoResult = await soraClient.generateVideo(videoPrompt, persona, {
+      size: '1024x1792',  // Sora 2 vertical format (9:16 aspect ratio)
       duration: 15,
     });
 
@@ -330,4 +330,8 @@ async function updateJob(
   }
 }
 
-export default app;
+// Export for Cloudflare Workers
+export default {
+  fetch: app.fetch,
+};
+
