@@ -159,6 +159,21 @@ app.get('/api/video/status/:job_id', async (c) => {
 });
 
 /**
+ * Root endpoint
+ */
+app.get('/', (c) => {
+  return c.json({
+    service: 'Capless Video Generator',
+    endpoints: {
+      generate: 'POST /api/video/generate - Generate video from parliament moment',
+      status: 'GET /api/video/status/:jobId - Check video generation status',
+      health: 'GET /health - Health check',
+    },
+    version: '1.0.0',
+  });
+});
+
+/**
  * Health check endpoint
  */
 app.get('/health', (c) => {
