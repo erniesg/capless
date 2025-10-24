@@ -1,0 +1,18 @@
+name = "capless-video-generator"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# R2 bucket for reading moments and storing generated videos
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "capless-preview"
+
+# KV namespace for tracking video generation jobs
+[[kv_namespaces]]
+binding = "VIDEO_JOBS"
+id = "edd74e3222ce46a2aa9b81884a5c2ab1"
+preview_id = "b5bede46738a4d769ee047b2dcbea44e"
+
+[env.development]
+name = "capless-video-generator-dev"

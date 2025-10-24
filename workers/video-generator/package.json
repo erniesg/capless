@@ -1,0 +1,30 @@
+{
+  "name": "video-generator",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "npx tsx test-manual.ts",
+    "test:vitest": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Cloudflare Worker for generating viral TikTok videos from parliament moments",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.67.0",
+    "hono": "^4.10.2",
+    "openai": "^4.77.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.5.31",
+    "@cloudflare/workers-types": "^4.20241022.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8",
+    "wrangler": "^3.94.0"
+  }
+}
