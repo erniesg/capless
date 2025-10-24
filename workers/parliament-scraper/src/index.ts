@@ -61,6 +61,9 @@ async function fetchHansard(date: string): Promise<any> {
   });
 
   if (!response.ok) {
+    // CRITICAL: Cancel response body to prevent "stalled HTTP response" deadlock
+    // This frees up fetch concurrency slots and prevents Worker freezing
+    await response.body?.cancel();
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
@@ -119,18 +122,25 @@ export default {
         console.log(`[Start] Total dates to process: ${allDates.length}`);
 
         // Enqueue all dates without checking R2 (queue consumer will skip existing)
-        // This prevents timeout from checking 25k+ files
-        let enqueued = 0;
-
-        for (const date of allDates) {
-          // Enqueue date for processing (consumer will check if exists)
-          await env.DATES_QUEUE.send({
+        // Use sendBatch to avoid "Too many API requests" error (1000 subrequest limit)
+        const messages = allDates.map(date => ({
+          body: {
             date,
             attempt: 0,
-          } as DateMessage);
+          } as DateMessage
+        }));
 
-          enqueued++;
+        let enqueued = 0;
+        const batchSize = 100;
+
+        // Send in batches of 100 (25,754 dates = ~258 batch calls, well under 1000 limit)
+        for (let i = 0; i < messages.length; i += batchSize) {
+          const batch = messages.slice(i, i + batchSize);
+          await env.DATES_QUEUE.sendBatch(batch);
+          enqueued += batch.length;
         }
+
+        console.log(`[Start] Enqueued ${enqueued} dates in ${Math.ceil(messages.length / batchSize)} batches`);
 
         return new Response(
           JSON.stringify({
