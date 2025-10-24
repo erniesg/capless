@@ -162,9 +162,25 @@ export default {
         const endDate = new Date();
         const totalDates = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
-        // Count scraped dates in R2
-        const list = await env.R2.list({ prefix: 'hansard/raw/' });
+        // Count scraped dates in R2 and find latest
+        const list = await env.R2.list({ prefix: 'hansard/raw/', limit: 1000 });
         const scrapedCount = list.objects.length;
+
+        // Find latest date from R2 objects
+        let lastDateChecked = 'Unknown';
+        if (list.objects.length > 0) {
+          const dates = list.objects
+            .map(obj => obj.key.replace('hansard/raw/', '').replace('.json', ''))
+            .sort((a, b) => {
+              // Sort by date (DD-MM-YYYY format)
+              const [dayA, monthA, yearA] = a.split('-').map(Number);
+              const [dayB, monthB, yearB] = b.split('-').map(Number);
+              const dateA = new Date(yearA, monthA - 1, dayA);
+              const dateB = new Date(yearB, monthB - 1, dayB);
+              return dateB.getTime() - dateA.getTime();
+            });
+          lastDateChecked = dates[0] || 'Unknown';
+        }
 
         return new Response(
           JSON.stringify({
@@ -172,6 +188,8 @@ export default {
             scraped: scrapedCount,
             remaining: totalDates - scrapedCount,
             progress: `${((scrapedCount / totalDates) * 100).toFixed(2)}%`,
+            last_date_scraped: lastDateChecked,
+            note: 'Progress shows sessions found. Queue processes ~600 dates/min including skips.',
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -179,20 +197,39 @@ export default {
         );
       }
 
-      // GET /check-today - Check today's and yesterday's Hansard reports
+      // GET /check-today - Check all dates from last scraped to today
       if (url.pathname === '/check-today' && request.method === 'GET') {
+        // Find the latest date in R2
+        const list = await env.R2.list({ prefix: 'hansard/raw/', limit: 1000 });
+
+        let startDate: Date;
+        if (list.objects.length > 0) {
+          // Get latest scraped date
+          const latestDateStr = list.objects
+            .map(obj => obj.key.replace('hansard/raw/', '').replace('.json', ''))
+            .sort((a, b) => {
+              const [dayA, monthA, yearA] = a.split('-').map(Number);
+              const [dayB, monthB, yearB] = b.split('-').map(Number);
+              const dateA = new Date(yearA, monthA - 1, dayA);
+              const dateB = new Date(yearB, monthB - 1, dayB);
+              return dateB.getTime() - dateA.getTime();
+            })[0];
+
+          const [day, month, year] = latestDateStr.split('-').map(Number);
+          startDate = new Date(year, month - 1, day);
+          startDate.setDate(startDate.getDate() + 1); // Start from next day
+        } else {
+          // No data yet, check last 7 days
+          startDate = new Date();
+          startDate.setDate(startDate.getDate() - 7);
+        }
+
         const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
+        const datesToCheck = generateDateRange(startDate, today);
 
-        const datesToCheck = [
-          `${String(yesterday.getDate()).padStart(2, '0')}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${yesterday.getFullYear()}`,
-          `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`
-        ];
+        console.log(`[CheckToday] Checking ${datesToCheck.length} dates from ${datesToCheck[0]} to ${datesToCheck[datesToCheck.length - 1]}`);
 
-        console.log(`[CheckToday] Checking ${datesToCheck.join(', ')}`);
-
-        // Enqueue today and yesterday
+        // Enqueue all dates since last scrape
         const messages = datesToCheck.map(date => ({
           body: {
             date,
@@ -200,12 +237,21 @@ export default {
           } as DateMessage
         }));
 
-        await env.DATES_QUEUE.sendBatch(messages);
+        if (messages.length > 0) {
+          // Send in batches of 100
+          for (let i = 0; i < messages.length; i += 100) {
+            const batch = messages.slice(i, i + 100);
+            await env.DATES_QUEUE.sendBatch(batch);
+          }
+        }
 
         return new Response(
           JSON.stringify({
             message: 'Daily check started',
-            dates: datesToCheck,
+            date_range: datesToCheck.length > 0 ? {
+              from: datesToCheck[0],
+              to: datesToCheck[datesToCheck.length - 1]
+            } : null,
             enqueued: datesToCheck.length,
           }),
           {
