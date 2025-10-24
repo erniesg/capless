@@ -118,19 +118,12 @@ export default {
         const allDates = generateDateRange(startDate, endDate);
         console.log(`[Start] Total dates to process: ${allDates.length}`);
 
-        // Check which dates already exist
+        // Enqueue all dates without checking R2 (queue consumer will skip existing)
+        // This prevents timeout from checking 25k+ files
         let enqueued = 0;
-        let skipped = 0;
 
         for (const date of allDates) {
-          const exists = await dateExists(env.R2, date);
-
-          if (exists) {
-            skipped++;
-            continue;
-          }
-
-          // Enqueue date for processing
+          // Enqueue date for processing (consumer will check if exists)
           await env.DATES_QUEUE.send({
             date,
             attempt: 0,
@@ -144,7 +137,6 @@ export default {
             message: 'Scraping started',
             total_dates: allDates.length,
             enqueued,
-            skipped,
             start_date: '22-04-1955',
             end_date: new Date().toISOString().split('T')[0],
           }),
