@@ -179,6 +179,41 @@ export default {
         );
       }
 
+      // GET /check-today - Check today's and yesterday's Hansard reports
+      if (url.pathname === '/check-today' && request.method === 'GET') {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const datesToCheck = [
+          `${String(yesterday.getDate()).padStart(2, '0')}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${yesterday.getFullYear()}`,
+          `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`
+        ];
+
+        console.log(`[CheckToday] Checking ${datesToCheck.join(', ')}`);
+
+        // Enqueue today and yesterday
+        const messages = datesToCheck.map(date => ({
+          body: {
+            date,
+            attempt: 0,
+          } as DateMessage
+        }));
+
+        await env.DATES_QUEUE.sendBatch(messages);
+
+        return new Response(
+          JSON.stringify({
+            message: 'Daily check started',
+            dates: datesToCheck,
+            enqueued: datesToCheck.length,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
       // GET /health
       if (url.pathname === '/health') {
         return new Response(
@@ -193,7 +228,7 @@ export default {
         );
       }
 
-      return new Response('Parliament Hansard Scraper\n\nEndpoints:\n- GET /start: Start scraping\n- GET /status: Check progress\n- GET /health: Health check', {
+      return new Response('Parliament Hansard Scraper\n\nEndpoints:\n- GET /start: Start scraping (one-time)\n- GET /check-today: Check today and yesterday\n- GET /status: Check progress\n- GET /health: Health check', {
         headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
       });
     } catch (error: any) {
@@ -242,13 +277,18 @@ export default {
       } catch (error: any) {
         console.error(`[Error] ${date}:`, error.message);
 
-        // Retry if not max retries
-        if (attempt < 2) {
-          message.retry(); // Retry this message
+        // HTTP 500 is expected (no session on this date) - skip immediately
+        if (error.message.includes('HTTP 500')) {
+          console.log(`[Skip] ${date}: No parliament session`);
+          message.ack(); // Skip without retry
+        } else if (attempt < 2) {
+          // Real network/API errors - retry up to 3 times
+          console.log(`[Retry] ${date}: Will retry (attempt ${attempt + 1}/3)`);
+          message.retry();
         } else {
-          // Max retries reached, move to dead letter queue
+          // Max retries reached for real errors
           console.error(`[DLQ] ${date}: Max retries reached`);
-          message.ack(); // Don't retry anymore
+          message.ack();
         }
       }
 
