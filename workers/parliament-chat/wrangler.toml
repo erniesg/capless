@@ -19,8 +19,8 @@ index_name = "parliament-chat"
 # KV for tracking embedded sessions
 [[kv_namespaces]]
 binding = "KV"
-id = "parliament_chat_kv_prod"  # Replace with your KV namespace ID
-preview_id = "parliament_chat_kv_preview"  # Replace with preview KV namespace ID
+id = "9e3a6aa9024e45fdad47130f420388bd"
+preview_id = "5f71600e73364889b7eedd736ea301c0"
 
 # Cloudflare Workers AI for embeddings (optional)
 [ai]

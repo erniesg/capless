@@ -147,10 +147,14 @@ export default {
           return errorResponse(`Session ${session_date} has no parseable content`, 400);
         }
 
-        // Chunk transcript
-        const chunks = chunkTranscript(segments);
+        // STRATEGY 3: Fixed-Size Chunks with Overlap
+        // Split into manageable chunks (500 tokens max, 50 token overlap)
+        // This preserves context while staying within embedding model limits
+        const chunks = chunkTranscript(segments, 500, 50);
 
-        // Embed chunks
+        console.log(`[Embed] Created ${chunks.length} chunks from ${segments.length} segments`);
+
+        // Generate embeddings for all chunks
         const embeddedChunks = await embedChunks(env, session_date, chunks);
 
         // Store in Vectorize
@@ -164,6 +168,9 @@ export default {
           session_date,
           chunk_count: embeddedChunks.length,
           segment_count: segments.length,
+          chunking_strategy: 'fixed-size-with-overlap',
+          max_tokens_per_chunk: 500,
+          overlap_tokens: 50,
         });
       }
 
@@ -304,6 +311,33 @@ export default {
           count: sessions.length,
           truncated: list.truncated,
         });
+      }
+
+      // GET /debug-vectors - Debug vector search (no filter)
+      if (url.pathname === '/debug-vectors' && request.method === 'GET') {
+        try {
+          // Generate a test embedding
+          const testText = ["COE allocation transport"];
+          const { embeddings } = await import('./embedding-service').then(m => m.generateEmbeddings(env, testText));
+
+          // Query without filter
+          const results = await env.VECTORIZE.query(embeddings[0], {
+            topK: 5,
+            returnMetadata: 'all',
+          });
+
+          return jsonResponse({
+            test_query: testText[0],
+            results_count: results.matches.length,
+            results: results.matches.map(m => ({
+              id: m.id,
+              score: m.score,
+              metadata: m.metadata,
+            })),
+          });
+        } catch (error) {
+          return errorResponse(`Debug failed: ${error}`, 500);
+        }
       }
 
       // GET /health - Health check

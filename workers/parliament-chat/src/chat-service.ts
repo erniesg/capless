@@ -109,7 +109,9 @@ Please provide a clear, concise answer based on the parliamentary transcript con
   try {
     // Try Anthropic Claude first (better at following instructions)
     if (env.ANTHROPIC_API_KEY) {
-      const model = anthropic('claude-3-5-sonnet-20241022');
+      const model = anthropic('claude-3-5-sonnet-20241022', {
+        apiKey: env.ANTHROPIC_API_KEY, // Explicitly pass API key
+      });
 
       const result = await generateText({
         model,
@@ -125,7 +127,9 @@ Please provide a clear, concise answer based on the parliamentary transcript con
 
     // Fallback to OpenAI
     if (env.OPENAI_API_KEY) {
-      const model = openai('gpt-4o-mini');
+      const model = openai('gpt-4o-mini', {
+        apiKey: env.OPENAI_API_KEY, // Explicitly pass API key
+      });
 
       const result = await generateText({
         model,
