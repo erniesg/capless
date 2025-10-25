@@ -10,6 +10,8 @@ import subprocess
 import os
 import sys
 from urllib.parse import urlparse, parse_qs
+import boto3
+from botocore.exceptions import ClientError
 
 def is_auth_error(error_message):
     """Detect if error is related to authentication"""
@@ -42,6 +44,50 @@ def extract_fresh_cookies():
             return None
     except Exception as e:
         print(f'Cookie extraction error: {str(e)}')
+        return None
+
+def upload_to_r2(file_path, date):
+    """Upload VTT file to Cloudflare R2"""
+    try:
+        # Get R2 credentials from environment
+        account_id = os.environ.get('R2_ACCOUNT_ID')
+        access_key_id = os.environ.get('R2_ACCESS_KEY_ID')
+        secret_access_key = os.environ.get('R2_SECRET_ACCESS_KEY')
+        bucket_name = os.environ.get('R2_BUCKET_NAME', 'capless-preview')
+
+        if not all([account_id, access_key_id, secret_access_key]):
+            print('WARNING: R2 credentials not configured - skipping upload')
+            return None
+
+        # Configure S3 client for R2
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=f'https://{account_id}.r2.cloudflarestorage.com',
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+            region_name='auto'
+        )
+
+        # Upload file to R2
+        r2_key = f'youtube/transcripts/{date}.vtt'
+        print(f'Uploading to R2: {r2_key}')
+
+        with open(file_path, 'rb') as f:
+            s3_client.upload_fileobj(
+                f,
+                bucket_name,
+                r2_key,
+                ExtraArgs={'ContentType': 'text/vtt'}
+            )
+
+        print(f'Successfully uploaded to R2: {r2_key}')
+        return r2_key
+
+    except ClientError as e:
+        print(f'R2 upload error: {str(e)}')
+        return None
+    except Exception as e:
+        print(f'Unexpected upload error: {str(e)}')
         return None
 
 class TranscriptHandler(BaseHTTPRequestHandler):
@@ -173,9 +219,10 @@ class TranscriptHandler(BaseHTTPRequestHandler):
             with open(vtt_file, 'r', encoding='utf-8') as f:
                 vtt_content = f.read()
 
-            # TODO: Upload to R2 (Phase 1.3)
-            # For now, just return success with transcript length
             print(f'Successfully extracted transcript for {video_id}: {len(vtt_content)} bytes')
+
+            # Upload to R2
+            r2_key = upload_to_r2(vtt_file, date)
 
             # Send success response
             self.send_response(200)
@@ -186,7 +233,8 @@ class TranscriptHandler(BaseHTTPRequestHandler):
                 'video_id': video_id,
                 'date': date,
                 'transcript_length': len(vtt_content),
-                'transcript_path': f'youtube/transcripts/{date}.vtt'  # Future R2 path
+                'transcript_path': r2_key if r2_key else f'youtube/transcripts/{date}.vtt',
+                'uploaded_to_r2': r2_key is not None
             }
             self.wfile.write(json.dumps(response).encode())
 

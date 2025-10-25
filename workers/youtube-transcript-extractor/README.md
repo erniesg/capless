@@ -59,7 +59,8 @@ Extract YouTube video transcript
   "video_id": "n9ZyN-lwiXg",
   "date": "2025-09-22",
   "transcript_length": 45123,
-  "transcript_path": "youtube/transcripts/2025-09-22.vtt"
+  "transcript_path": "youtube/transcripts/2025-09-22.vtt",
+  "uploaded_to_r2": true
 }
 ```
 
@@ -75,7 +76,18 @@ Extract YouTube video transcript
 
 ## Environment Variables
 
+### Server Configuration
 - `PORT`: HTTP server port (default: 8080)
+
+### R2 Storage Configuration
+Configure these environment variables to enable automatic uploads to Cloudflare R2:
+
+- `R2_ACCOUNT_ID`: Cloudflare account ID
+- `R2_ACCESS_KEY_ID`: R2 access key ID
+- `R2_SECRET_ACCESS_KEY`: R2 secret access key
+- `R2_BUCKET_NAME`: R2 bucket name (default: `capless-preview`)
+
+If R2 credentials are not configured, transcripts will still be extracted but won't be uploaded. The container will log a warning and return `uploaded_to_r2: false` in the response.
 
 ## YouTube Authentication
 
