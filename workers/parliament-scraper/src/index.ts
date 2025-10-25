@@ -61,6 +61,14 @@ async function getDateCheck(kv: KVNamespace, date: string): Promise<DateCheckRec
 }
 
 /**
+ * Get YouTube URL for a specific date from KV
+ */
+async function getYoutubeUrl(kv: KVNamespace, date: string): Promise<{video_id: string, title: string} | null> {
+  const record = await kv.get(`youtube:${date}`, 'json');
+  return record as {video_id: string, title: string} | null;
+}
+
+/**
  * Mark date as checked in KV
  */
 async function markDateChecked(
@@ -625,6 +633,46 @@ Health:
 
         // Mark date as successfully checked in KV
         await markDateChecked(env.DATES_KV, date, 'has_session', attempt + 1);
+
+        // NEW: Check if YouTube URL exists for this date
+        const youtubeUrl = await getYoutubeUrl(env.DATES_KV, date);
+
+        if (youtubeUrl) {
+          console.log(`[YouTube] Found URL for ${date}: ${youtubeUrl.video_id}`);
+
+          // Check if transcript already exists in R2
+          const transcriptKey = `youtube/transcripts/${date}.vtt`;
+          const transcriptExists = await env.R2.head(transcriptKey);
+
+          if (!transcriptExists) {
+            console.log(`[YouTube] Triggering transcript extraction for ${date}`);
+
+            // Trigger deployed container (uses proxy quota)
+            try {
+              const response = await fetch('https://youtube-transcript-extractor.erniesg.workers.dev/extract', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  video_id: youtubeUrl.video_id,
+                  date: date
+                }),
+                signal: AbortSignal.timeout(180000) // 3 minute timeout
+              });
+
+              if (response.ok) {
+                const result = await response.json();
+                console.log(`[YouTube] ✅ Transcript extracted for ${date}:`, result);
+              } else {
+                const error = await response.text();
+                console.error(`[YouTube] ❌ Extraction failed for ${date}:`, error);
+              }
+            } catch (error: any) {
+              console.error(`[YouTube] Error extracting transcript for ${date}:`, error.message);
+            }
+          } else {
+            console.log(`[YouTube] Transcript already exists for ${date}`);
+          }
+        }
 
         console.log(`[Success] ${date}`);
         message.ack(); // Mark as successfully processed

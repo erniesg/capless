@@ -16,8 +16,11 @@ import boto3
 from botocore.exceptions import ClientError
 
 # scrape.do proxy configuration
-SCRAPE_DO_TOKEN = os.environ.get('SCRAPE_DO_TOKEN', '99863f3851994a20a8222502e63bf6c28b6abb4cf6e')
-SCRAPE_DO_PROXY_URL = f"http://{SCRAPE_DO_TOKEN}:super=true@proxy.scrape.do:8080"
+# Secret must be set via: npx wrangler secret put SCRAPE_DO_TOKEN
+SCRAPE_DO_TOKEN = os.environ.get('SCRAPE_DO_TOKEN')
+if not SCRAPE_DO_TOKEN:
+    print('WARNING: SCRAPE_DO_TOKEN not set')
+SCRAPE_DO_PROXY_URL = f"http://{SCRAPE_DO_TOKEN}:super=true@proxy.scrape.do:8080" if SCRAPE_DO_TOKEN else None
 
 def is_auth_error(error_message):
     """Detect if error is related to authentication"""
@@ -272,10 +275,8 @@ class TranscriptHandler(BaseHTTPRequestHandler):
 
             print(f'Successfully extracted transcript for {video_id}: {len(vtt_content)} bytes')
 
-            # Upload to R2
-            r2_key = upload_to_r2(vtt_file, date)
-
-            # Send success response
+            # Send success response with transcript content
+            # Worker will handle R2 upload using binding
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
@@ -283,9 +284,7 @@ class TranscriptHandler(BaseHTTPRequestHandler):
                 'status': 'success',
                 'video_id': video_id,
                 'date': date,
-                'transcript_length': len(vtt_content),
-                'transcript_path': r2_key if r2_key else f'youtube/transcripts/{date}.vtt',
-                'uploaded_to_r2': r2_key is not None
+                'transcript': vtt_content
             }
             self.wfile.write(json.dumps(response).encode())
 

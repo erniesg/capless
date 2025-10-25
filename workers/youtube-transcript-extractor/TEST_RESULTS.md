@@ -164,7 +164,7 @@ GET https://www.googleapis.com/youtube/v3/captions
 ```python
 import yt_dlp
 
-proxy_url = "http://99863f3851994a20a8222502e63bf6c28b6abb4cf6e:super=true@proxy.scrape.do:8080"
+proxy_url = "http://YOUR_SCRAPE_DO_TOKEN:super=true@proxy.scrape.do:8080"
 
 ydl_opts = {
     'proxy': proxy_url,

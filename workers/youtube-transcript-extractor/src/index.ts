@@ -71,12 +71,84 @@ export default {
 			);
 		}
 
-		// Get or create Durable Object instance
-		// Using a fixed ID for single-instance deployment
+		// Handle /extract endpoint directly in worker to upload to R2
+		if (url.pathname === "/extract" && request.method === "POST") {
+			try {
+				const body = await request.json() as { video_id: string; date: string };
+				const { video_id, date } = body;
+
+				if (!video_id || !date) {
+					return new Response(JSON.stringify({ status: "error", message: "Missing video_id or date" }), {
+						status: 400,
+						headers: { "Content-Type": "application/json" },
+					});
+				}
+
+				// Get container instance
+				const id = env.YOUTUBE_EXTRACTOR.idFromName("extractor-v1");
+				const stub = env.YOUTUBE_EXTRACTOR.get(id);
+
+				// Create new request for container (original body was consumed)
+				const containerRequest = new Request(`http://container/extract`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ video_id, date }),
+				});
+
+				// Forward to container to extract transcript
+				const containerResponse = await stub.fetch(containerRequest);
+				const result = await containerResponse.json() as {
+					status: string;
+					video_id: string;
+					date: string;
+					transcript: string;
+					message?: string;
+				};
+
+				if (result.status !== "success" || !result.transcript) {
+					return new Response(JSON.stringify(result), {
+						status: containerResponse.status,
+						headers: { "Content-Type": "application/json" },
+					});
+				}
+
+				// Upload transcript to R2 using binding
+				const r2Key = `youtube/transcripts/${date}.vtt`;
+				await env.R2.put(r2Key, result.transcript, {
+					httpMetadata: { contentType: "text/vtt" },
+				});
+
+				console.log(`✅ Uploaded transcript to R2: ${r2Key} (${result.transcript.length} bytes)`);
+
+				return new Response(JSON.stringify({
+					status: "success",
+					video_id,
+					date,
+					transcript_length: result.transcript.length,
+					transcript_path: r2Key,
+					uploaded_to_r2: true,
+				}), {
+					headers: { "Content-Type": "application/json" },
+				});
+			} catch (error) {
+				console.error("Extract endpoint error:", error);
+				return new Response(
+					JSON.stringify({
+						status: "error",
+						message: error instanceof Error ? error.message : String(error),
+					}),
+					{
+						status: 500,
+						headers: { "Content-Type": "application/json" },
+					}
+				);
+			}
+		}
+
+		// Forward other requests to container
 		const id = env.YOUTUBE_EXTRACTOR.idFromName("extractor-v1");
 		const stub = env.YOUTUBE_EXTRACTOR.get(id);
 
-		// Forward request to container
 		try {
 			return await stub.fetch(request);
 		} catch (error) {

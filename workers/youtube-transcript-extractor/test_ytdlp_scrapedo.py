@@ -8,8 +8,13 @@ import sys
 import json
 import yt_dlp
 
-# scrape.do credentials
-SCRAPE_DO_TOKEN = "99863f3851994a20a8222502e63bf6c28b6abb4cf6e"
+# scrape.do credentials - must be set via environment variable
+# Set via: export SCRAPE_DO_TOKEN="your-token"
+SCRAPE_DO_TOKEN = os.environ.get('SCRAPE_DO_TOKEN')
+if not SCRAPE_DO_TOKEN:
+    print("ERROR: SCRAPE_DO_TOKEN environment variable not set")
+    print("Set it via: export SCRAPE_DO_TOKEN='your-token'")
+    sys.exit(1)
 
 # Configure scrape.do proxy (proxy mode)
 # Format: http://TOKEN:super=true@proxy.scrape.do:8080

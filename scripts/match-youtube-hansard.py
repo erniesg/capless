@@ -62,10 +62,10 @@ for parliament_file in ["14th-parliament-videos.txt", "15th-parliament-videos.tx
             if not date:
                 continue
 
-            # Skip English interpretation versions (keep main version)
+            # Prefer English interpretation versions over regular versions
             is_interpretation = 'English interpretation' in title or 'English Interpretation' in title
 
-            if date not in video_map or not is_interpretation:
+            if date not in video_map or is_interpretation:
                 video_map[date] = {
                     'video_id': video_id,
                     'title': title,
