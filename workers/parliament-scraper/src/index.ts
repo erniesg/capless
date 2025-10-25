@@ -561,6 +561,66 @@ export default {
         );
       }
 
+      // POST /sync-youtube-url - Sync YouTube URL for a specific date to KV
+      // Body: { date: "2024-08-06", video_id: "x0u0TZctbGY", title: "...", is_interpretation: true, has_hansard: true }
+      if (url.pathname === '/sync-youtube-url' && request.method === 'POST') {
+        try {
+          const body = await request.json() as {
+            date: string;
+            video_id: string;
+            title: string;
+            is_interpretation?: boolean;
+            has_hansard?: boolean;
+          };
+
+          if (!body.date || !body.video_id || !body.title) {
+            return new Response(
+              JSON.stringify({ error: 'Missing required fields: date, video_id, title' }),
+              {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              }
+            );
+          }
+
+          // Write to KV with key format: youtube:{date}
+          await env.DATES_KV.put(
+            `youtube:${body.date}`,
+            JSON.stringify({
+              video_id: body.video_id,
+              title: body.title,
+              is_interpretation: body.is_interpretation ?? false,
+              has_hansard: body.has_hansard ?? true,
+            })
+          );
+
+          console.log(`[YouTube Sync] Synced ${body.date} -> ${body.video_id}`);
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              date: body.date,
+              video_id: body.video_id,
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        } catch (error: unknown) {
+          console.error('[YouTube Sync] Error:', error);
+          return new Response(
+            JSON.stringify({
+              error: 'Failed to sync YouTube URL',
+              message: error instanceof Error ? error.message : String(error)
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+      }
+
       // GET /health
       if (url.pathname === '/health') {
         return new Response(
