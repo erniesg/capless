@@ -123,6 +123,46 @@ class TranscriptHandler(BaseHTTPRequestHandler):
 
             print(f'🎬 Extracting transcript: {video_id} ({date})')
 
+            # Check if transcript already exists in R2 before extraction
+            account_id = os.environ.get('R2_ACCOUNT_ID')
+            access_key_id = os.environ.get('R2_ACCESS_KEY_ID')
+            secret_access_key = os.environ.get('R2_SECRET_ACCESS_KEY')
+            bucket_name = os.environ.get('R2_BUCKET_NAME', 'capless-preview')
+
+            if all([account_id, access_key_id, secret_access_key]):
+                try:
+                    s3_client = boto3.client(
+                        's3',
+                        endpoint_url=f'https://{account_id}.r2.cloudflarestorage.com',
+                        aws_access_key_id=access_key_id,
+                        aws_secret_access_key=secret_access_key,
+                        region_name='auto'
+                    )
+
+                    r2_key = f'youtube/transcripts/{date}.vtt'
+                    s3_client.head_object(Bucket=bucket_name, Key=r2_key)
+
+                    # File exists - return early
+                    print(f'✅ Transcript already exists in R2: {r2_key}')
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    response = {
+                        'status': 'exists',
+                        'video_id': video_id,
+                        'date': date,
+                        'r2_key': r2_key,
+                        'message': 'Transcript already extracted'
+                    }
+                    self.wfile.write(json.dumps(response).encode())
+                    return
+
+                except ClientError as e:
+                    if e.response['Error']['Code'] == '404':
+                        print(f'📝 Transcript not found in R2, proceeding with extraction')
+                    else:
+                        print(f'⚠️  R2 check error: {str(e)}, proceeding anyway')
+
             try:
                 # Get transcript (prefers manual, falls back to auto-generated)
                 transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
