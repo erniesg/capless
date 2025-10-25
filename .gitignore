@@ -32,11 +32,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# YouTube backfill logs (from /tmp)
-youtube-backfill*.log
-youtube-kv-sync*.log
-youtube-matching.log
-
 # Temporary files
 *.tmp
 *.temp
