@@ -21,6 +21,7 @@ export class YouTubeExtractor extends Container {
 		return await this.startAndWaitForPorts({
 			startOptions: {
 				envVars: {
+					SCRAPE_DO_TOKEN: env.SCRAPE_DO_TOKEN || '',
 					R2_ACCOUNT_ID: env.R2_ACCOUNT_ID || '',
 					R2_ACCESS_KEY_ID: env.R2_ACCESS_KEY_ID || '',
 					R2_SECRET_ACCESS_KEY: env.R2_SECRET_ACCESS_KEY || '',
@@ -37,6 +38,8 @@ export class YouTubeExtractor extends Container {
 export interface Env {
 	YOUTUBE_EXTRACTOR: DurableObjectNamespace<YouTubeExtractor>;
 	R2: R2Bucket;
+	// scrape.do proxy token - set via: npx wrangler secret put SCRAPE_DO_TOKEN
+	SCRAPE_DO_TOKEN?: string;
 	// R2 secrets - set via: npx wrangler secret put R2_ACCOUNT_ID
 	R2_ACCOUNT_ID?: string;
 	R2_ACCESS_KEY_ID?: string;

@@ -2,6 +2,8 @@
 """
 YouTube Transcript Extractor Container
 Receives requests to extract YouTube video transcripts and save to R2
+
+Uses scrape.do residential proxy to bypass YouTube's anti-bot protections
 """
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -12,6 +14,10 @@ import sys
 from urllib.parse import urlparse, parse_qs
 import boto3
 from botocore.exceptions import ClientError
+
+# scrape.do proxy configuration
+SCRAPE_DO_TOKEN = os.environ.get('SCRAPE_DO_TOKEN', '99863f3851994a20a8222502e63bf6c28b6abb4cf6e')
+SCRAPE_DO_PROXY_URL = f"http://{SCRAPE_DO_TOKEN}:super=true@proxy.scrape.do:8080"
 
 def is_auth_error(error_message):
     """Detect if error is related to authentication"""
@@ -185,20 +191,24 @@ class TranscriptHandler(BaseHTTPRequestHandler):
             result = None
 
             for attempt in range(max_retries):
-                # Build yt-dlp command with optional cookie support
+                # Build yt-dlp command with scrape.do proxy support
                 cmd = ['yt-dlp', '--write-auto-sub', '--sub-lang', 'en', '--skip-download', '--output', output_path]
 
-                # Check if cookies file exists
+                # Add scrape.do residential proxy (critical for bypassing YouTube blocking)
+                cmd.extend(['--proxy', SCRAPE_DO_PROXY_URL])
+                cmd.append('--no-check-certificate')  # Required for scrape.do proxy
+
+                print(f'Attempt {attempt + 1}: Using scrape.do residential proxy')
+
+                # Check if cookies file exists (optional - proxy is primary method)
                 cookie_file = '/app/cookies.txt'
                 if os.path.exists(cookie_file):
-                    print(f'Attempt {attempt + 1}: Using cookies from {cookie_file}')
+                    print(f'  + Using cookies from {cookie_file}')
                     cmd.extend(['--cookies', cookie_file])
-                else:
-                    print(f'Attempt {attempt + 1}: No cookies - proceeding without authentication')
 
                 cmd.append(video_url)
 
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
 
                 # Check if extraction succeeded
                 if result.returncode == 0:
@@ -287,7 +297,7 @@ class TranscriptHandler(BaseHTTPRequestHandler):
             self.send_response(504)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            response = {'status': 'error', 'message': 'yt-dlp timeout (>30s)'}
+            response = {'status': 'error', 'message': 'yt-dlp timeout (>180s)'}
             self.wfile.write(json.dumps(response).encode())
 
         except Exception as e:

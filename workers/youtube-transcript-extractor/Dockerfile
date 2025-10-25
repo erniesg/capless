@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# Install Chrome for cookie extraction (optional, for local dev)
+# Install Chrome for cookie extraction (optional fallback, primary method is scrape.do proxy)
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -10,12 +10,14 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# Install yt-dlp and boto3 for R2 uploads
-RUN pip install --no-cache-dir yt-dlp boto3
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy server code
-COPY server.py /app/server.py
-WORKDIR /app
+COPY server.py .
 
 # Expose port for HTTP server
 EXPOSE 8080
