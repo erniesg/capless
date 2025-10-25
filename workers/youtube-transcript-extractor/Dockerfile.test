@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+
+# Install yt-dlp and boto3 for R2 uploads (skip Chrome for local testing)
+RUN pip install --no-cache-dir yt-dlp boto3
+
+# Copy server code
+COPY server.py /app/server.py
+WORKDIR /app
+
+# Expose port for HTTP server
+EXPOSE 8080
+
+# Run the server
+CMD ["python", "server.py"]
