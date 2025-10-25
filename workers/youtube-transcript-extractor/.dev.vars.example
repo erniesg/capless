@@ -1,0 +1,15 @@
+# Example local development environment variables
+# Copy this file to .dev.vars and fill in your actual values
+# NEVER commit .dev.vars to git!
+
+# scrape.do proxy token for bypassing YouTube blocking
+# Get yours at: https://scrape.do/
+SCRAPE_DO_TOKEN=your_scrape_do_token_here
+
+# R2 Credentials for local development
+# These are passed to the container as environment variables
+# Get from Cloudflare dashboard: R2 > Settings
+R2_ACCOUNT_ID=your_r2_account_id
+R2_ACCESS_KEY_ID=your_r2_access_key_id
+R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+R2_BUCKET_NAME=capless-preview

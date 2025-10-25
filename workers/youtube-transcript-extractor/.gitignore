@@ -1,0 +1,10 @@
+# Local development secrets - NEVER commit this file
+.dev.vars
+
+# Node modules
+node_modules/
+
+# Wrangler artifacts
+.wrangler/
+worker/
+dist/
