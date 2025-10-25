@@ -18,9 +18,11 @@ from botocore.exceptions import ClientError
 # scrape.do proxy configuration
 # Secret must be set via: npx wrangler secret put SCRAPE_DO_TOKEN
 SCRAPE_DO_TOKEN = os.environ.get('SCRAPE_DO_TOKEN')
+print(f'DEBUG: SCRAPE_DO_TOKEN received in container: present={bool(SCRAPE_DO_TOKEN)}, length={len(SCRAPE_DO_TOKEN) if SCRAPE_DO_TOKEN else 0}')
 if not SCRAPE_DO_TOKEN:
     print('WARNING: SCRAPE_DO_TOKEN not set')
 SCRAPE_DO_PROXY_URL = f"http://{SCRAPE_DO_TOKEN}:super=true@proxy.scrape.do:8080" if SCRAPE_DO_TOKEN else None
+print(f'DEBUG: SCRAPE_DO_PROXY_URL={SCRAPE_DO_PROXY_URL[:50] if SCRAPE_DO_PROXY_URL else None}...')
 
 def is_auth_error(error_message):
     """Detect if error is related to authentication"""
