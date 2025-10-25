@@ -46,6 +46,44 @@ def extract_fresh_cookies():
         print(f'Cookie extraction error: {str(e)}')
         return None
 
+def download_cookies_from_r2():
+    """Download YouTube cookies from R2"""
+    try:
+        # Get R2 credentials from environment
+        account_id = os.environ.get('R2_ACCOUNT_ID')
+        access_key_id = os.environ.get('R2_ACCESS_KEY_ID')
+        secret_access_key = os.environ.get('R2_SECRET_ACCESS_KEY')
+        bucket_name = os.environ.get('R2_BUCKET_NAME', 'capless-preview')
+
+        if not all([account_id, access_key_id, secret_access_key]):
+            print('WARNING: R2 credentials not configured - cannot download cookies')
+            return False
+
+        # Configure S3 client for R2
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=f'https://{account_id}.r2.cloudflarestorage.com',
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+            region_name='auto'
+        )
+
+        # Download cookies from R2
+        r2_key = 'youtube/cookies.txt'
+        cookie_path = '/app/cookies.txt'
+
+        print(f'Downloading cookies from R2: {r2_key}')
+        s3_client.download_file(bucket_name, r2_key, cookie_path)
+        print(f'Successfully downloaded cookies to {cookie_path}')
+        return True
+
+    except ClientError as e:
+        print(f'R2 cookies download error: {str(e)}')
+        return False
+    except Exception as e:
+        print(f'Unexpected cookies download error: {str(e)}')
+        return False
+
 def upload_to_r2(file_path, date):
     """Upload VTT file to Cloudflare R2"""
     try:
@@ -138,6 +176,9 @@ class TranscriptHandler(BaseHTTPRequestHandler):
             output_path = f'/tmp/{date}'
 
             print(f'Extracting transcript for {video_id} (date: {date})')
+
+            # Download cookies from R2 if available
+            download_cookies_from_r2()
 
             # Try extraction with existing cookies first, retry with fresh cookies if auth error
             max_retries = 2
