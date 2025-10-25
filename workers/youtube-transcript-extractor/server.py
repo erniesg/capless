@@ -277,8 +277,10 @@ class TranscriptHandler(BaseHTTPRequestHandler):
 
             print(f'Successfully extracted transcript for {video_id}: {len(vtt_content)} bytes')
 
-            # Send success response with transcript content
-            # Worker will handle R2 upload using binding
+            # Upload to R2
+            r2_key = upload_to_r2(vtt_file, date)
+
+            # Send success response with transcript content and R2 location
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
@@ -286,7 +288,8 @@ class TranscriptHandler(BaseHTTPRequestHandler):
                 'status': 'success',
                 'video_id': video_id,
                 'date': date,
-                'transcript': vtt_content
+                'transcript': vtt_content,
+                'r2_key': r2_key  # Include R2 location in response
             }
             self.wfile.write(json.dumps(response).encode())
 

@@ -6,7 +6,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy server code (rebuild: 2025-10-25 v2 - Container helper class)
+# Copy server code (rebuild: 2025-10-25 v3 - Added R2 upload)
 COPY server.py .
 
 # Expose port for HTTP server
