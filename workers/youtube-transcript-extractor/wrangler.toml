@@ -1,0 +1,12 @@
+name = "youtube-transcript-extractor"
+main = "."
+compatibility_date = "2024-10-01"
+
+[container]
+cpu = 1
+memory = 512  # MB
+
+# R2 bucket for storing transcripts
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "capless-preview"
