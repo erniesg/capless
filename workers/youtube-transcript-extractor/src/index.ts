@@ -16,6 +16,19 @@ import { Container } from "@cloudflare/containers";
 export class YouTubeExtractor extends Container {
 	defaultPort = 8080;
 	sleepAfter = "1h"; // Container sleeps after 1 hour of inactivity
+
+	async start(env: Env) {
+		return await this.startAndWaitForPorts({
+			startOptions: {
+				envVars: {
+					R2_ACCOUNT_ID: env.R2_ACCOUNT_ID || '',
+					R2_ACCESS_KEY_ID: env.R2_ACCESS_KEY_ID || '',
+					R2_SECRET_ACCESS_KEY: env.R2_SECRET_ACCESS_KEY || '',
+					R2_BUCKET_NAME: env.R2_BUCKET_NAME || 'capless-preview',
+				},
+			},
+		});
+	}
 }
 
 /**
@@ -24,6 +37,7 @@ export class YouTubeExtractor extends Container {
 export interface Env {
 	YOUTUBE_EXTRACTOR: DurableObjectNamespace<YouTubeExtractor>;
 	R2: R2Bucket;
+	// R2 secrets - set via: npx wrangler secret put R2_ACCOUNT_ID
 	R2_ACCOUNT_ID?: string;
 	R2_ACCESS_KEY_ID?: string;
 	R2_SECRET_ACCESS_KEY?: string;

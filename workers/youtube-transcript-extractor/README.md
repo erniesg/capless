@@ -23,6 +23,22 @@ curl -X POST http://localhost:8080/extract \
 
 ## Deploy to Cloudflare
 
+### 1. Configure R2 Secrets (Optional)
+To enable automatic R2 uploads, set Worker Secrets:
+
+```bash
+# Set R2 credentials as Worker Secrets
+npx wrangler secret put R2_ACCOUNT_ID
+npx wrangler secret put R2_ACCESS_KEY_ID
+npx wrangler secret put R2_SECRET_ACCESS_KEY
+
+# Optional: Override default bucket name
+npx wrangler secret put R2_BUCKET_NAME
+```
+
+These secrets are passed to the container via environment variables using the `start()` method in `src/index.ts:20`.
+
+### 2. Deploy
 ```bash
 npx wrangler deploy
 ```
