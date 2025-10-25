@@ -1,0 +1,42 @@
+name: Deploy Workers
+
+on:
+  push:
+    branches:
+      - main  # Production
+      - dev   # Development
+
+jobs:
+  deploy-dev:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: |
+            for worker in workers/*/; do
+              cd "$worker"
+              if [ -f "wrangler.toml" ]; then
+                npx wrangler deploy --env dev
+              fi
+              cd - > /dev/null
+            done
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: |
+            for worker in workers/*/; do
+              cd "$worker"
+              if [ -f "wrangler.toml" ]; then
+                npx wrangler deploy
+              fi
+              cd - > /dev/null
+            done

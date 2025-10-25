@@ -1,0 +1,9 @@
+FROM python:3.11-slim
+
+# Install only yt-dlp and boto3 (NO Chrome - for testing)
+RUN pip install --no-cache-dir yt-dlp boto3
+
+COPY server.py /app/server.py
+WORKDIR /app
+EXPOSE 8080
+CMD ["python", "server.py"]

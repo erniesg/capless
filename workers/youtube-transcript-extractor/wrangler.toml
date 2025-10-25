@@ -5,7 +5,7 @@ compatibility_date = "2024-10-01"
 # Container configuration
 [[containers]]
 class_name = "YouTubeExtractor"
-image = "./Dockerfile"
+image = "./Dockerfile.simple"
 max_instances = 1
 
 # Durable Objects binding
