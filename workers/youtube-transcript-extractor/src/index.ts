@@ -18,15 +18,20 @@ export class YouTubeExtractor extends Container {
 	sleepAfter = "1h"; // Container sleeps after 1 hour of inactivity
 
 	async start(env: Env) {
+		// Only pass env vars that are actually set (no empty string fallbacks)
+		const envVars: Record<string, string> = {};
+
+		if (env.SCRAPE_DO_TOKEN) envVars.SCRAPE_DO_TOKEN = env.SCRAPE_DO_TOKEN;
+		if (env.R2_ACCOUNT_ID) envVars.R2_ACCOUNT_ID = env.R2_ACCOUNT_ID;
+		if (env.R2_ACCESS_KEY_ID) envVars.R2_ACCESS_KEY_ID = env.R2_ACCESS_KEY_ID;
+		if (env.R2_SECRET_ACCESS_KEY) envVars.R2_SECRET_ACCESS_KEY = env.R2_SECRET_ACCESS_KEY;
+
+		// R2_BUCKET_NAME has a default
+		envVars.R2_BUCKET_NAME = env.R2_BUCKET_NAME || 'capless-preview';
+
 		return await this.startAndWaitForPorts({
 			startOptions: {
-				envVars: {
-					SCRAPE_DO_TOKEN: env.SCRAPE_DO_TOKEN || '',
-					R2_ACCOUNT_ID: env.R2_ACCOUNT_ID || '',
-					R2_ACCESS_KEY_ID: env.R2_ACCESS_KEY_ID || '',
-					R2_SECRET_ACCESS_KEY: env.R2_SECRET_ACCESS_KEY || '',
-					R2_BUCKET_NAME: env.R2_BUCKET_NAME || 'capless-preview',
-				},
+				envVars,
 			},
 		});
 	}
