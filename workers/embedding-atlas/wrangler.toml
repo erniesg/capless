@@ -1,0 +1,23 @@
+name = "capless-embedding-atlas"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# R2 bucket for reading raw Hansard responses (shared with parliament-scraper)
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "capless-preview"
+
+# D1 database for chunks and metadata
+[[d1_databases]]
+binding = "DB"
+database_name = "capless-embedding-atlas"
+database_id = "TBD"  # Will be created
+
+# Vectorize index for embeddings
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "parliament-embeddings"
+
+[env.development]
+name = "capless-embedding-atlas-dev"
