@@ -43,3 +43,6 @@ test-outputs/
 *.mp4
 *.mp3
 *.json3
+
+# YouTube transcripts (temporary - uploaded to R2)
+youtube-transcripts/

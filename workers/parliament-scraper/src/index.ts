@@ -561,6 +561,92 @@ export default {
         );
       }
 
+      // GET /sync-youtube-transcripts - Sync YouTube transcripts from R2 to KV
+      // Creates KV entries: youtube-transcript:{date} → R2 location
+      // Uses batching to avoid hitting 1000 subrequest limit
+      if (url.pathname === '/sync-youtube-transcripts' && request.method === 'GET') {
+        const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+        const limit = parseInt(url.searchParams.get('limit') || '100', 10);
+
+        console.log(`[YouTube Transcript Sync] Starting batch: offset=${offset}, limit=${limit}`);
+
+        // List ALL YouTube transcripts in R2
+        let allTranscripts: string[] = [];
+        let cursor: string | undefined = undefined;
+
+        console.log(`[YouTube Transcript Sync] Fetching all R2 transcripts...`);
+        do {
+          const list = await env.R2.list({
+            prefix: 'youtube/transcripts/',
+            limit: 1000,
+            cursor: cursor,
+          });
+
+          const dates = list.objects.map(obj =>
+            obj.key.replace('youtube/transcripts/', '').replace('.vtt', '')
+          );
+
+          allTranscripts.push(...dates);
+          cursor = list.truncated ? list.cursor : undefined;
+        } while (cursor);
+
+        console.log(`[YouTube Transcript Sync] Found ${allTranscripts.length} total transcripts`);
+
+        // Extract just the dates for this batch
+        const batchDates = allTranscripts.slice(offset, offset + limit);
+
+        if (batchDates.length === 0) {
+          console.log(`[YouTube Transcript Sync] Complete - no more transcripts to process`);
+          return new Response(
+            JSON.stringify({
+              message: 'YouTube transcript sync complete - all transcripts indexed',
+              offset,
+              processed: 0,
+              total_transcripts: allTranscripts.length,
+              complete: true,
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
+        // Update KV: create youtube-transcript:{date} entries
+        console.log(`[YouTube Transcript Sync] Indexing ${batchDates.length} transcripts in KV...`);
+        for (const date of batchDates) {
+          const r2Key = `youtube/transcripts/${date}.vtt`;
+          await env.DATES_KV.put(
+            `youtube-transcript:${date}`,
+            JSON.stringify({
+              r2_key: r2Key,
+              indexed_at: new Date().toISOString(),
+            })
+          );
+        }
+
+        const totalTranscripts = allTranscripts.length;
+        const processed = Math.min(offset + batchDates.length, totalTranscripts);
+        const complete = processed >= totalTranscripts;
+
+        console.log(`[YouTube Transcript Sync] Batch complete: ${batchDates.length} transcripts indexed, ${processed}/${totalTranscripts} total (${Math.round(processed/totalTranscripts*100)}%)`);
+
+        return new Response(
+          JSON.stringify({
+            message: complete ? 'YouTube transcript sync complete!' : `Batch indexed: ${processed}/${totalTranscripts}`,
+            offset,
+            processed: batchDates.length,
+            total_processed: processed,
+            total_transcripts: totalTranscripts,
+            complete,
+            next_offset: complete ? null : offset + limit,
+            progress_percent: Math.round(processed/totalTranscripts*100),
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
       // POST /sync-youtube-url - Sync YouTube URL for a specific date to KV
       // Body: { date: "2024-08-06", video_id: "x0u0TZctbGY", title: "...", is_interpretation: true, has_hansard: true }
       if (url.pathname === '/sync-youtube-url' && request.method === 'POST') {
@@ -643,8 +729,9 @@ Endpoints:
 - GET /status         : Check scraping progress
 
 KV Sync Endpoints:
-- GET /sync-r2-batch  : Sync R2→KV (mark sessions as has_session)
-- GET /backfill-kv    : Mark non-session dates as no_session
+- GET /sync-r2-batch           : Sync R2→KV (mark sessions as has_session)
+- GET /backfill-kv             : Mark non-session dates as no_session
+- GET /sync-youtube-transcripts: Index YouTube transcripts from R2 to KV
 
 Health:
 - GET /health         : Health check

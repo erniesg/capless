@@ -17,6 +17,10 @@ class_name = "YouTubeExtractor"
 image = "./Dockerfile.simple"
 max_instances = 1
 
+# Environment variables for container
+[vars]
+SCRAPE_DO_TOKEN = ""  # Set via: npx wrangler secret put SCRAPE_DO_TOKEN
+
 # Durable Objects binding
 [[durable_objects.bindings]]
 class_name = "YouTubeExtractor"
