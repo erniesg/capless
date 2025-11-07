@@ -14,20 +14,18 @@ app = modal.App("capless-api")
 # Docker image with ffmpeg and faster-whisper
 image = (
     modal.Image.debian_slim(python_version="3.11")
-    .apt_install("ffmpeg")
+    .apt_install(
+        "ffmpeg",
+        "pkg-config",
+        "libavcodec-dev",
+        "libavformat-dev",
+        "libavdevice-dev"
+    )  # ffmpeg libs needed for PyAV build
     .pip_install(
-        "faster-whisper==1.0.1",
+        "faster-whisper>=1.1.0",  # Use newer version compatible with Debian 11 FFmpeg
         "boto3",
         "requests",
     )
-)
-
-# R2 bucket mount for audio storage
-r2_bucket = modal.CloudBucketMount(
-    bucket_name="capless-preview",
-    bucket_endpoint_url="https://5b25778cf6d9821373d913f5236e1606.r2.cloudflarestorage.com",
-    secret=modal.Secret.from_name("r2-credentials"),
-    read_only=False,
 )
 
 # ============================================================================
@@ -36,22 +34,33 @@ r2_bucket = modal.CloudBucketMount(
 
 @app.function(
     image=image,
-    cloud_bucket_mounts={"/r2": r2_bucket},
+    volumes={
+        "/r2": modal.CloudBucketMount(
+            bucket_name="capless-preview",
+            bucket_endpoint_url="https://5b25778cf6d9821373d913f5236e1606.r2.cloudflarestorage.com",
+            secret=modal.Secret.from_name("r2-credentials"),
+            read_only=True,  # Read-only mount for video input
+        )
+    },
+    secrets=[modal.Secret.from_name("r2-credentials")],  # Add secret for boto3 upload
     timeout=3600,
 )
 def extract_audio(session_date: str) -> dict:
     """Extract audio from MP4 video in R2 and save back to R2"""
+    import boto3
+    import os
+
     print(f"[Audio Extraction] Starting for session: {session_date}")
 
     video_path = f"/r2/youtube/videos/{session_date}.mp4"
-    audio_path = f"/r2/youtube/audio/{session_date}.mp3"
+    local_audio_path = f"/tmp/{session_date}.mp3"  # Write to local temp
 
     if not Path(video_path).exists():
         raise FileNotFoundError(f"Video not found: {video_path}")
 
     print(f"[Audio Extraction] Video found: {video_path}")
 
-    # Extract audio (64kbps for speech, 16kHz sample rate)
+    # Extract audio to local temp file
     cmd = [
         "ffmpeg",
         "-i", video_path,
@@ -60,7 +69,7 @@ def extract_audio(session_date: str) -> dict:
         "-b:a", "64k",
         "-ar", "16000",
         "-y",
-        audio_path
+        local_audio_path
     ]
 
     print(f"[Audio Extraction] Running ffmpeg...")
@@ -69,7 +78,7 @@ def extract_audio(session_date: str) -> dict:
     if result.returncode != 0:
         raise RuntimeError(f"ffmpeg failed: {result.stderr}")
 
-    audio_size = Path(audio_path).stat().st_size
+    audio_size = Path(local_audio_path).stat().st_size
 
     # Get duration
     duration_cmd = [
@@ -77,16 +86,32 @@ def extract_audio(session_date: str) -> dict:
         "-v", "error",
         "-show_entries", "format=duration",
         "-of", "default=noprint_wrappers=1:nokey=1",
-        audio_path
+        local_audio_path
     ]
     duration_result = subprocess.run(duration_cmd, capture_output=True, text=True)
     duration_seconds = float(duration_result.stdout.strip())
 
-    print(f"[Audio Extraction] Complete! Size: {audio_size / 1024 / 1024:.2f} MB, Duration: {duration_seconds / 60:.2f} min")
+    print(f"[Audio Extraction] Audio extracted: {audio_size / 1024 / 1024:.2f} MB, Duration: {duration_seconds / 60:.2f} min")
+
+    # Upload to R2 using boto3
+    print(f"[Audio Extraction] Uploading to R2...")
+    s3 = boto3.client('s3',
+        endpoint_url="https://5b25778cf6d9821373d913f5236e1606.r2.cloudflarestorage.com",
+        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+        region_name='auto')
+
+    r2_key = f"youtube/audio/{session_date}.mp3"
+    s3.upload_file(local_audio_path, 'capless-preview', r2_key)
+
+    print(f"[Audio Extraction] Uploaded to R2: {r2_key}")
+
+    # Cleanup local file
+    os.remove(local_audio_path)
 
     return {
         "session_date": session_date,
-        "audio_r2_key": f"youtube/audio/{session_date}.mp3",
+        "audio_r2_key": r2_key,
         "audio_size_mb": round(audio_size / 1024 / 1024, 2),
         "duration_minutes": round(duration_seconds / 60, 2),
         "extracted_at": datetime.now().isoformat(),
@@ -100,7 +125,14 @@ def extract_audio(session_date: str) -> dict:
 @app.function(
     image=image,
     gpu="T4",
-    cloud_bucket_mounts={"/r2": r2_bucket},
+    volumes={
+        "/r2": modal.CloudBucketMount(
+            bucket_name="capless-preview",
+            bucket_endpoint_url="https://5b25778cf6d9821373d913f5236e1606.r2.cloudflarestorage.com",
+            secret=modal.Secret.from_name("r2-credentials"),
+            read_only=False,
+        )
+    },
     timeout=3600,
 )
 def transcribe_audio(session_date: str) -> dict:

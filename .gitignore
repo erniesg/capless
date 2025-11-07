@@ -46,3 +46,12 @@ test-outputs/
 
 # YouTube transcripts (temporary - uploaded to R2)
 youtube-transcripts/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.py[cod]
+*$py.class
