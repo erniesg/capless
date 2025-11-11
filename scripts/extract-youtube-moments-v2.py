@@ -19,6 +19,10 @@ from pathlib import Path
 from datetime import datetime
 import time
 import random
+import urllib3
+
+# Disable SSL warnings for sandbox environment
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def load_credentials():
     """Load credentials from .dev.vars file"""
@@ -288,7 +292,8 @@ Transcript section:
                     ],
                     'response_format': {'type': 'json_object'}
                 },
-                timeout=120
+                timeout=120,
+                verify=False  # Disable SSL verification for sandbox
             )
 
             if response.status_code == 429:
@@ -357,7 +362,8 @@ def generate_embeddings(texts, max_retries=3):
                     'model': 'text-embedding-3-small',
                     'input': texts
                 },
-                timeout=60
+                timeout=60,
+                verify=False  # Disable SSL verification for sandbox
             )
 
             if response.status_code == 429:
@@ -510,7 +516,8 @@ Return all {len(moments)} moments in ranked order."""
                     ],
                     'response_format': {'type': 'json_object'}
                 },
-                timeout=120
+                timeout=120,
+                verify=False  # Disable SSL verification for sandbox
             )
 
             if response.status_code == 429:
