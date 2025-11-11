@@ -71,7 +71,7 @@ PREFIX_TRANSCRIPTS = 'youtube/transcripts/'
 PREFIX_MOMENTS = 'moment-extraction/'
 
 # Configuration
-CHUNK_DURATION = 9000  # 2.5 hours in seconds (midpoint between 2-3h)
+CHUNK_DURATION = 7200  # 2 hours in seconds (safer for 272k token limit)
 OVERLAP_DURATION = 1200  # 20 minutes overlap
 MIN_MOMENTS_PER_CHUNK = 3
 MAX_MOMENTS_PER_CHUNK = 5
