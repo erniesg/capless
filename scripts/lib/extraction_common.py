@@ -8,6 +8,7 @@ import sys
 import json
 import time
 import random
+import math
 import requests
 import boto3
 from pathlib import Path
@@ -217,3 +218,256 @@ Transcript:
                 return None
 
     return None
+
+
+def generate_embeddings(texts, api_key, max_retries=3):
+    """
+    Generate embeddings using OpenAI text-embedding-3-small
+
+    Args:
+        texts: List of text strings to embed
+        api_key: OpenAI API key
+        max_retries: Maximum retry attempts
+
+    Returns:
+        List of embedding vectors or None on failure
+    """
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(
+                'https://api.openai.com/v1/embeddings',
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {api_key}'
+                },
+                json={
+                    'model': 'text-embedding-3-small',
+                    'input': texts
+                },
+                timeout=60
+            )
+
+            if response.status_code == 429:
+                if attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) + random.uniform(0, 1)
+                    print(f"  ⏳ Embedding rate limited. Retry {attempt+1}/{max_retries} in {wait_time:.1f}s...", file=sys.stderr)
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"  ❌ Embedding rate limit exceeded", file=sys.stderr)
+                    return None
+
+            if response.status_code != 200:
+                print(f"  ❌ Embedding API error: {response.status_code}", file=sys.stderr)
+                return None
+
+            result = response.json()
+            return [item['embedding'] for item in result['data']]
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                print(f"  ⏳ Embedding error: {e}. Retry {attempt+1}/{max_retries} in {wait_time:.1f}s...", file=sys.stderr)
+                time.sleep(wait_time)
+            else:
+                print(f"  ❌ Embedding failed: {e}", file=sys.stderr)
+                return None
+
+    return None
+
+
+def cosine_similarity(a, b):
+    """Calculate cosine similarity between two vectors"""
+    dot_product = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(y * y for y in b))
+    return dot_product / (norm_a * norm_b) if (norm_a * norm_b) > 0 else 0
+
+
+def semantic_deduplication(moments, api_key, threshold=0.85):
+    """
+    Remove semantically similar moments using embeddings
+
+    Args:
+        moments: List of moment dictionaries with 'quote' field
+        api_key: OpenAI API key
+        threshold: Similarity threshold for considering duplicates (default: 0.85)
+
+    Returns:
+        Tuple of (unique_moments, deduplication_decisions)
+    """
+    if not moments:
+        return [], []
+
+    print(f"  🧠 Generating embeddings for {len(moments)} moments...", file=sys.stderr)
+
+    # Generate embeddings for all quotes
+    quotes = [m['quote'] for m in moments]
+    embeddings = generate_embeddings(quotes, api_key)
+
+    if embeddings is None:
+        print(f"  ⚠️ Embedding generation failed, skipping semantic deduplication", file=sys.stderr)
+        return moments, []
+
+    # Find duplicates using similarity matrix
+    unique_moments = []
+    removed_indices = set()
+    dedup_decisions = []
+
+    for i in range(len(moments)):
+        if i in removed_indices:
+            continue
+
+        unique_moments.append(moments[i])
+
+        # Find similar moments
+        for j in range(i + 1, len(moments)):
+            if j in removed_indices:
+                continue
+
+            similarity = cosine_similarity(embeddings[i], embeddings[j])
+
+            if similarity > threshold:
+                removed_indices.add(j)
+
+                dedup_decisions.append({
+                    'kept_index': i,
+                    'kept_quote': moments[i]['quote'][:100],
+                    'removed_index': j,
+                    'removed_quote': moments[j]['quote'][:100],
+                    'similarity': float(similarity),
+                    'reason': 'semantic_similarity'
+                })
+
+    print(f"  ✅ Semantic dedup: {len(moments)} → {len(unique_moments)} moments ({len(removed_indices)} removed)", file=sys.stderr)
+
+    return unique_moments, dedup_decisions
+
+
+def global_reranking(moments, api_key, max_retries=3):
+    """
+    Send all candidate moments to AI for global reranking
+
+    Args:
+        moments: List of moment dictionaries
+        api_key: OpenAI API key
+        max_retries: Maximum retry attempts
+
+    Returns:
+        List of reranked moments sorted by priority
+    """
+    if not moments:
+        return []
+
+    print(f"  🎯 Global reranking of {len(moments)} candidates...", file=sys.stderr)
+
+    # Prepare moment summaries for AI
+    moment_summaries = []
+    for i, m in enumerate(moments):
+        moment_summaries.append(f"{i+1}. [{m.get('viral_score', 7.0)}] {m.get('speaker', 'Unknown')}: \"{m['quote'][:100]}...\"")
+
+    prompt = f"""You are reviewing ALL candidate moments extracted from a parliamentary session.
+
+Here are {len(moments)} candidate moments that were extracted:
+
+{chr(10).join(moment_summaries)}
+
+Your task:
+1. Consider each moment's virality potential in the context of the FULL session
+2. Re-score each moment if needed (some may be less unique when seeing all moments together)
+3. Return ALL moments ranked by final priority (highest to lowest)
+
+Prioritize:
+- Unique perspectives (avoid multiple variations of the same point)
+- Diversity of topics and speakers
+- Mix of problematic and wholesome moments
+- Truly standout content that will get shared
+
+Return a JSON object with:
+{{
+  "ranked_moments": [
+    {{
+      "original_index": 0,
+      "final_score": 8.5,
+      "ranking_reason": "Brief explanation of ranking"
+    }}
+  ]
+}}
+
+Return all {len(moments)} moments in ranked order."""
+
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(
+                'https://api.openai.com/v1/chat/completions',
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {api_key}'
+                },
+                json={
+                    'model': 'gpt-5-mini',
+                    'messages': [
+                        {'role': 'system', 'content': 'You are an expert content strategist. Return only valid JSON, no markdown.'},
+                        {'role': 'user', 'content': prompt}
+                    ],
+                    'response_format': {'type': 'json_object'}
+                },
+                timeout=120
+            )
+
+            if response.status_code == 429:
+                if attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) + random.uniform(0, 1)
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"  ⚠️ Reranking rate limited, using original scores", file=sys.stderr)
+                    return sorted(moments, key=lambda m: m.get('viral_score', 7.0), reverse=True)
+
+            if response.status_code != 200:
+                print(f"  ⚠️ Reranking API error, using original scores", file=sys.stderr)
+                return sorted(moments, key=lambda m: m.get('viral_score', 7.0), reverse=True)
+
+            result = response.json()
+            ranking_data = json.loads(result['choices'][0]['message']['content'])
+            ranked = ranking_data.get('ranked_moments', [])
+
+            # Deduplicate by original_index (AI sometimes hallucinates duplicates)
+            seen_indices = set()
+            unique_ranked = []
+            duplicates_found = 0
+            for rank_info in ranked:
+                idx = rank_info['original_index']
+                if idx not in seen_indices:
+                    seen_indices.add(idx)
+                    unique_ranked.append(rank_info)
+                else:
+                    duplicates_found += 1
+
+            if duplicates_found > 0:
+                print(f"  ⚠️  Removed {duplicates_found} duplicate rankings from AI response", file=sys.stderr)
+
+            # Apply new scores and reorder
+            reranked_moments = []
+            for rank_info in unique_ranked:
+                idx = rank_info['original_index']
+                if 0 <= idx < len(moments):
+                    moment = moments[idx].copy()
+                    moment['initial_score'] = moment.get('viral_score', 7.0)
+                    moment['final_score'] = rank_info.get('final_score', moment['initial_score'])
+                    moment['ranking_reason'] = rank_info.get('ranking_reason', '')
+                    moment['global_ranking'] = len(reranked_moments) + 1
+                    reranked_moments.append(moment)
+
+            print(f"  ✅ Global reranking complete: {len(moments)} → {len(reranked_moments)} moments", file=sys.stderr)
+            return reranked_moments
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                time.sleep(wait_time)
+            else:
+                print(f"  ⚠️ Reranking failed: {e}, using original scores", file=sys.stderr)
+                return sorted(moments, key=lambda m: m.get('viral_score', 7.0), reverse=True)
+
+    return moments
