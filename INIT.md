@@ -14,10 +14,7 @@ We have exactly **4 core MDs** - that's it:
 1. README.md - Quick start & status
 2. ARCHITECTURE.md - Complete technical specs (5 workers, ADRs, deployment)
 3. PERSONAS.md - Voice DNA system
-4. MOMENT_TAXONOMY_SIMPLE.md - Extraction strategy (13 categories + wildcard)
-
-**Also useful:**
-- `MOMENT_CATEGORIES_V2.md` - Voting UI categories aligned with personas (deprecated by taxonomy)
+4. MOMENT_TAXONOMY_SIMPLE.md - Complete extraction strategy (13 categories + wildcard + persona pairing)
 
 **Historical/deprecated docs** exist but should not be updated:
 - INIT.md (this file - outdated architecture references)

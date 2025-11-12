@@ -489,6 +489,28 @@ All 13 categories are votable as "Most _____ Moment":
 
 ---
 
+## 🎙️ PERSONA PAIRING (For Video Generation)
+
+**Which persona should react to which moment type:**
+
+| Category | Best Persona | Why |
+|----------|--------------|-----|
+| Don't Ask Me | Uncle | Cuts through BS with street logic |
+| Push Ball | Uncle/Auntie | Both deal with consequences |
+| Ownself Check Ownself | Uncle/Gen Z | Call out circular logic |
+| Wayang King | Uncle/Gen Z | Best at spotting performative nonsense |
+| Say What Now? | Gen Z/Uncle | Excel at exposing absurd logic |
+| Solid Move | All | Everyone appreciates good governance |
+| Attenborough-Worthy | Attenborough | Obviously |
+| Receipts Please | Attenborough | Analyzes data patterns |
+| Kiasu Auntie | Auntie | Her specialty! |
+| Mic Drop | Gen Z/Uncle | Appreciates the burn |
+| Spicy Exchange | Uncle/Gen Z | Love the drama |
+| Straight Talk | All | Everyone values honesty |
+| Wildcard | All | Depends on the moment |
+
+---
+
 ## ✅ BENEFITS
 
 **For Extraction:**
