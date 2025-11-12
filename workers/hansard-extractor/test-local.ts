@@ -170,11 +170,14 @@ async function testExtraction(date: string) {
     const scoreChange = moment.final_score ? `(${initialScore.toFixed(1)}→${finalScore.toFixed(1)})` : '';
 
     console.error(`\n${i + 1}. [#${moment.global_ranking || i + 1}] ${moment.title || 'N/A'} ${scoreChange}`);
-    console.error(`   Category: ${moment.category || 'Unknown'}`);
-    console.error(`   Speaker: ${moment.speaker || 'Unknown'}`);
-    console.error(`   Quote: "${moment.quote.slice(0, 100)}..."`);
+    console.error(`   Speakers: ${moment.speakers.join(', ')}`);
+    console.error(`   Summary: ${moment.summary.slice(0, 150)}...`);
+    console.error(`   Highlights:`);
+    for (const highlight of moment.highlights) {
+      console.error(`      • ${highlight.speaker}: "${highlight.quote.slice(0, 80)}..."`);
+    }
     if (moment.ranking_reason) {
-      console.error(`   Why: ${moment.ranking_reason.slice(0, 80)}...`);
+      console.error(`   Why ranked here: ${moment.ranking_reason.slice(0, 80)}...`);
     }
   }
 
