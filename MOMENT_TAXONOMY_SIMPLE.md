@@ -103,6 +103,12 @@ WILDCARD:               7 moments ← THE SURPRISES!
 - Edwin Tong: "We don't know the cost"
 - "Not in public interest to disclose reasons"
 
+**Persona Reactions:**
+- **Uncle:** "Walao eh! You're the government and you DON'T KNOW?!"
+- **Auntie:** "How to plan ahead if they don't even track! So stress!"
+- **Gen Z:** "Bro said 'we don't track' like data doesn't exist 💀"
+- **Attenborough:** "*whispers* The bureaucrat, when cornered, retreats into ignorance..."
+
 **NOT this category:**
 - If they answer but deflect to citizens → Push Ball (#2)
 - If they answer but it's theatre → Wayang King (#4)
@@ -121,6 +127,12 @@ WILDCARD:               7 moments ← THE SURPRISES!
 - "Fix formaldehyde? Just ventilate"
 - "Insurance expensive? Just be flexible"
 - "Hawker uncle must use fewer ingredients"
+
+**Persona Reactions:**
+- **Uncle:** "This one is CLASSIC push ball tactic! Minister kick problem to homeowner!"
+- **Auntie:** "They say 'flexible' but actually means we die our own business right?"
+- **Gen Z:** "It's giving 'not my problem' energy fr fr"
+- **Attenborough:** "Notice how the burden transfers from regulator to citizen..."
 
 **NOT this category:**
 - If they deflect to other MPs → Ownself Check Ownself (#3)
@@ -143,6 +155,12 @@ WILDCARD:               7 moments ← THE SURPRISES!
 - Internal audit clearing internal problems
 - "We've conducted our own review..."
 
+**Persona Reactions:**
+- **Uncle:** "Liddat also can ah? Ownself check ownself, confirm will pass one lah!"
+- **Auntie:** "Aiyoh! Like asking the fox to guard the chicken coop! How like that?"
+- **Gen Z:** "The conflict of interest is conflicting 💀 make it make sense"
+- **Attenborough:** "A fascinating circular pattern emerges when oversight oversights itself..."
+
 **NOT this category:**
 - If it's just evasion without self-regulation → Don't Ask Me (#1)
 - If it's performative → Wayang King (#4)
@@ -162,6 +180,12 @@ WILDCARD:               7 moments ← THE SURPRISES!
 - Teo Chee Hean: "You missed the reports" (after audit failures)
 - "八字都还没一撇" - too early to discuss (but problem is urgent)
 - Thanking Minister during their scandal discussion
+
+**Persona Reactions:**
+- **Uncle:** "Wah this one wayang power level 9000! NATO - No Action, Talk Only!"
+- **Auntie:** "My friend's daughter say this kind is 'gaslighting' right? Cannot be like that!"
+- **Gen Z:** "The AUDACITY. Tell me you're out of touch without telling me you're out of touch 💀"
+- **Attenborough:** "*whispers* Political theater in its purest form..."
 
 **NOT this category:**
 - If it's absurd logic → Say What Now? (#5)
@@ -531,6 +555,33 @@ All 13 categories are votable as "Most _____ Moment":
 
 ---
 
-**Status:** Simplified taxonomy ready
+## 🎨 CREATIVE PHRASES & ACRONYM RE-INTERPRETATIONS
+
+**Singlish Cultural References:**
+- **"Push Ball"** - Classic Singaporean for passing the buck
+- **"Ownself Check Ownself"** - Self-regulation paradox
+- **"Wayang"** - Malay for theatrical performance → political theatre
+- **"Walao eh!"** - Expression of exasperation
+- **"Liddat also can?"** - "This is also acceptable?" (incredulous)
+- **"Kiasu"** - Fear of losing out
+
+**Creative Acronym Re-interpretations:**
+- **NATO** - No Action, Talk Only
+- **BMW** - Bus, MRT, Walk (Singaporean transport reality)
+- **TGIF** - Thank God I'm Flexible (government's solution to everything)
+- **COE** - Cannot Afford Everything
+- **HDB** - How to Downgrade Better
+- **CPF** - Cannot Pay Forever / Can Pay? Faint!
+
+**Potential Future Categories:**
+- 🏓 **Political Ping-Pong** - MPs deflecting to each other instead of answering citizens
+- 🎪 **Circus Logic** - When explanation is more confusing than the problem
+- 🪃 **Boomerang Answer** - Question comes back to asker unchanged
+
+**Usage:** These phrases make moments instantly relatable and shareable in Singaporean context. Encourage personas to use them organically in reactions.
+
+---
+
+**Status:** Simplified taxonomy with cultural resonance
 **Next:** Update extraction prompt to use these 13 categories
 **Key Addition:** "Ownself Check Ownself" now spotlight category! 🪞
