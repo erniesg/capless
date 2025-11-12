@@ -312,8 +312,9 @@ def main():
         print(f"  • {metadata['chunk_id']}: sections {sections_str} | {titles_preview}... | {metadata['char_count']:,} chars", file=sys.stderr)
     print("", file=sys.stderr)
 
-    # Extract moments from each chunk
+    # Stage 1: Extract moments from each chunk
     all_moments = []
+    raw_moments_by_chunk = []
 
     for i, (chunk_text, metadata) in enumerate(chunks, 1):
         print(f"🔄 Processing chunk {i}/{len(chunks)} ({len(chunk_text):,} chars)...", file=sys.stderr)
@@ -321,6 +322,13 @@ def main():
         moments = extract_moments_from_chunk(chunk_text, metadata)
 
         if moments:
+            # Save raw moments for this chunk
+            raw_moments_by_chunk.append({
+                'chunk_id': metadata['chunk_id'],
+                'moments_count': len(moments),
+                'moments': moments
+            })
+
             all_moments.extend(moments)
             print(f"  ✅ Extracted {len(moments)} moments", file=sys.stderr)
         else:
@@ -337,13 +345,54 @@ def main():
         print("❌ No moments extracted from any chunk", file=sys.stderr)
         sys.exit(1)
 
-    # Prepare output with RICH METADATA
+    print(f"✅ Stage 1 complete: {len(all_moments)} candidate moments from {len(chunks)} chunks\n", file=sys.stderr)
+
+    # Stage 2: Consolidation (semantic dedup + global reranking)
+    print("="*60, file=sys.stderr)
+    print("📊 STAGE 2: CONSOLIDATION", file=sys.stderr)
+    print("="*60, file=sys.stderr)
+
+    # Import consolidation functions
+    sys.path.insert(0, str(Path(__file__).parent / 'lib'))
+    from extraction_common import semantic_deduplication, global_reranking
+
+    # Semantic deduplication
+    semantically_unique, dedup_decisions = semantic_deduplication(
+        all_moments,
+        api_key=OPENAI_API_KEY,
+        threshold=0.85
+    )
+
+    # Global reranking
+    final_moments = global_reranking(
+        semantically_unique,
+        api_key=OPENAI_API_KEY
+    )
+
+    # Consolidation stats
+    consolidation_stats = {
+        'total_candidates_extracted': len(all_moments),
+        'semantic_duplicates_removed': len(all_moments) - len(semantically_unique),
+        'final_moments_count': len(final_moments),
+        'avg_initial_score': sum(m.get('viral_score', 7.0) for m in all_moments) / len(all_moments) if all_moments else 0,
+        'avg_final_score': sum(m.get('final_score', m.get('viral_score', 7.0)) for m in final_moments) / len(final_moments) if final_moments else 0,
+        'top_moment_score': final_moments[0].get('final_score', final_moments[0].get('viral_score', 0)) if final_moments else 0
+    }
+
+    print("", file=sys.stderr)
+    print(f"✅ Consolidation complete:", file=sys.stderr)
+    print(f"   • {len(all_moments)} candidates → {len(semantically_unique)} unique → {len(final_moments)} ranked", file=sys.stderr)
+    print(f"   • Removed {len(all_moments) - len(semantically_unique)} semantic duplicates", file=sys.stderr)
+    print(f"   • Avg score: {consolidation_stats['avg_initial_score']:.2f} → {consolidation_stats['avg_final_score']:.2f}", file=sys.stderr)
+    print("", file=sys.stderr)
+
+    # Prepare output with RICH METADATA + CONSOLIDATION
     output = {
         'date': date,
         'model': 'gpt-5-mini',
         'extracted_at': datetime.utcnow().isoformat() + 'Z',
-        'format': 'NEW_STRUCTURED_FORMAT',
-        'extraction_strategy': 'section_aware_chunked_v2',
+        'format': 'NEW_STRUCTURED_FORMAT_V2_WITH_CONSOLIDATION',
+        'extraction_strategy': 'section_aware_chunked_v2_with_consolidation',
         'chunks_processed': len(chunks),
         'chunks_metadata': [
             {
@@ -356,7 +405,10 @@ def main():
             }
             for _, metadata in chunks
         ],
-        'moments': all_moments
+        'raw_moments_by_chunk': raw_moments_by_chunk,
+        'consolidation_stats': consolidation_stats,
+        'deduplication_decisions': dedup_decisions[:50],  # First 50 for audit
+        'moments': final_moments
     }
 
     # Save to file
@@ -366,41 +418,26 @@ def main():
 
     print("", file=sys.stderr)
     print("="*60, file=sys.stderr)
-    print("RESULTS", file=sys.stderr)
+    print("FINAL RESULTS", file=sys.stderr)
     print("="*60, file=sys.stderr)
-    print(f"✅ Extracted {len(moments)} moments", file=sys.stderr)
+    print(f"✅ Final moments: {len(final_moments)} (from {len(all_moments)} candidates)", file=sys.stderr)
     print(f"💾 Saved to {output_path}", file=sys.stderr)
     print("", file=sys.stderr)
 
-    # Print moments
-    for i, moment in enumerate(moments, 1):
-        print(f"\n{i}. [{moment.get('viral_score', 0)}] {moment.get('title', 'N/A')}", file=sys.stderr)
+    # Print TOP 10 moments with ranking
+    print("TOP 10 MOMENTS (ranked by final score):", file=sys.stderr)
+    for i, moment in enumerate(final_moments[:10], 1):
+        initial_score = moment.get('initial_score', moment.get('viral_score', 0))
+        final_score = moment.get('final_score', initial_score)
+        score_change = f"({initial_score:.1f}→{final_score:.1f})" if 'final_score' in moment else ""
+
+        print(f"\n{i}. [#{moment.get('global_ranking', i)}] {moment.get('title', 'N/A')} {score_change}", file=sys.stderr)
         print(f"   Speaker: {moment.get('speaker', 'Unknown')}", file=sys.stderr)
         print(f"   Quote: \"{moment.get('quote', '')[:100]}...\"", file=sys.stderr)
+        if moment.get('ranking_reason'):
+            print(f"   Why: {moment.get('ranking_reason', '')[:80]}...", file=sys.stderr)
 
     print("\n" + "="*60, file=sys.stderr)
-    print("🔍 Check if '13 vs 15' moment was captured:", file=sys.stderr)
-
-    found_13_vs_15 = False
-    for moment in moments:
-        quote = moment.get('quote', '').lower()
-        if '13' in quote and '15' in quote:
-            print(f"✅ FOUND! '{moment.get('quote', '')[:100]}...'", file=sys.stderr)
-            found_13_vs_15 = True
-            break
-
-    if not found_13_vs_15:
-        print("❌ NOT FOUND in extracted moments", file=sys.stderr)
-        print("", file=sys.stderr)
-        print("Let me search the full transcript:", file=sys.stderr)
-
-        # Search transcript
-        lines = transcript.split('\n')
-        for i, line in enumerate(lines):
-            if '13' in line and '15' in line and ('disruption' in line.lower() or 'service' in line.lower()):
-                print(f"Found in transcript line {i}: {line[:200]}", file=sys.stderr)
-
-    print("="*60, file=sys.stderr)
 
 if __name__ == '__main__':
     try:
