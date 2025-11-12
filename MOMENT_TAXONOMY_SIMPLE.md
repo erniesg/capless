@@ -566,12 +566,14 @@ All 13 categories are votable as "Most _____ Moment":
 - **"Kiasu"** - Fear of losing out
 
 **Creative Acronym Re-interpretations:**
-- **NATO** - No Action, Talk Only
-- **BMW** - Bus, MRT, Walk (Singaporean transport reality)
-- **TGIF** - Thank God I'm Flexible (government's solution to everything)
-- **COE** - Cannot Afford Everything
-- **HDB** - How to Downgrade Better
-- **CPF** - Cannot Pay Forever / Can Pay? Faint!
+(As personas would say them)
+
+- **NATO** - "No Action, Talk Only" (Uncle's classic)
+- **BMW** - "Bus, MRT, Walk" (Everyone's transport reality)
+- **COE** - "Confirm Own, Expensive!" (Auntie complaining about car prices)
+- **HDB** - "House? Damn Big loan lah" (Uncle's mortgage stress)
+- **CPF** - "Can Pay? Faint!" (Auntie calculating retirement)
+- **TGIF** - "Thank Government It's Flexible" (Gen Z's sarcastic take on push ball)
 
 **Potential Future Categories:**
 - 🏓 **Political Ping-Pong** - MPs deflecting to each other instead of answering citizens
