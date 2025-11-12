@@ -1,0 +1,42 @@
+name = "hansard-extractor"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Bindings
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# R2 Bucket binding
+[[r2_buckets]]
+binding = "CAPLESS_R2"
+bucket_name = "capless"
+
+# Queue binding
+[[queues.producers]]
+binding = "HANSARD_QUEUE"
+queue = "hansard-extraction-queue"
+
+[[queues.consumers]]
+queue = "hansard-extraction-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "hansard-extraction-dlq"
+
+# Durable Object binding
+[[durable_objects.bindings]]
+name = "CHECKPOINT"
+class_name = "Checkpoint"
+script_name = "hansard-extractor"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["Checkpoint"]
+
+# Secrets (set via wrangler secret put)
+# OPENAI_API_KEY
+
+# Limits
+[limits]
+cpu_ms = 30000
