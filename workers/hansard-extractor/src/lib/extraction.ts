@@ -3,12 +3,17 @@
  * Pure TypeScript implementation for Cloudflare Workers
  */
 
-export interface Moment {
+export interface Highlight {
   quote: string;
   speaker: string;
+}
+
+export interface Moment {
+  summary: string;
+  highlights: Highlight[];
+  speakers: string[];
   why_viral: string;
   viral_score: number;
-  category: string;
   title: string;
   source_chunk_id?: string;
   source_sections?: number[];
@@ -71,48 +76,67 @@ export async function extractMomentsWithRetry(
   const prompt = `You are extracting VIRAL moments from a parliamentary session transcript.
 
 Be SELECTIVE. Only extract moments that are TRULY viral-worthy:
-- Score 8+ material: Shocking, hilarious, or deeply problematic
+- Score 8+ material: Shocking, hilarious, deeply problematic, inspiring
 - Score 7-8 material: Strong shareable content
 - Skip anything below 7
 
-Extract 5-10 moments maximum. Focus on:
+Extract 5-10 moments maximum.
 
-PROBLEMATIC moments:
+Look for moments that trigger STRONG EMOTIONAL REACTIONS:
+
+PROBLEMATIC/OUTRAGE:
 - Bureaucratic doublespeak or dense jargon
 - Contradictions or illogical reasoning
-- Defensive or evasive responses
+- Defensive or evasive responses ("we don't track that")
 - Out-of-touch statements
-- Controversial statistics or comparisons
+- Deflecting responsibility to citizens
 
-WHOLESOME/POSITIVE moments:
+HUMOROUS/COMEDY GOLD:
+- Contradictions: Praising someone right after exposing their failures
+- Absurdity: Defending the obviously ridiculous with a straight face
+- Tone-deaf: Completely missing why people are upset
+- Self-owns: Accidentally proving the critic's point
+- Jargon backfire: Overly complex words for simple things that sound ridiculous
+
+WHOLESOME/INSPIRING:
 - Compassionate responses showing empathy
-- Bold policy commitments
-- Pragmatic solutions
-- Inspiring statements
+- Bold commitments with clear timelines
+- Politicians admitting mistakes
+- Direct honest answers without corporate speak
 
-ATTENBOROUGH-WORTHY moments (epic, cinematic observations):
+DRAMATIC/SHOCKING:
+- Devastating statistics
+- Catches someone in contradiction
+- Heated exchanges
+- Receipts/proof of hypocrisy
+
+ATTENBOROUGH-WORTHY (epic observations):
 - Profound observations about human nature/society
 - Poetic descriptions of complex situations
 - Sweeping statements about the future
 - Epic metaphors or analogies
-- Nature documentary-style narration of political theater
+- Nature documentary-style narration of political behavior
 
-SUCK-UP/DEFLECTION moments (comedy gold):
-- MPs praising someone IMMEDIATELY after they were grilled about failures
-- Awkward transitions from serious audit issues to flattery
-- "You're doing such hard work" right after disaster revelations
-- Deflection tactics that are transparently obvious
-- Tone-deaf compliments in wrong context
+WILDCARD/OTHER:
+- Anything genuinely viral-worthy that doesn't fit above
+- Unexpected moments
+- Unique one-offs
+- Meme-worthy content
 
 Return ONLY a JSON object with this structure:
 {
   "moments": [
     {
-      "quote": "Exact verbatim quote from transcript (15-40 words optimal)",
-      "speaker": "Speaker name if identifiable",
-      "why_viral": "Why this will go viral (1-2 sentences)",
+      "summary": "Brief description of what's happening in this exchange (2-3 sentences, sets up the context)",
+      "highlights": [
+        {
+          "quote": "Exact quotable soundbite (15-40 words, the shareable clip)",
+          "speaker": "Speaker name"
+        }
+      ],
+      "speakers": ["All participants in this moment"],
+      "why_viral": "Why this triggers strong emotion and will get shared",
       "viral_score": 7.0-10.0,
-      "category": "Reality Check/Drama Alert/Wholesome/Attenborough/Suck-Up/etc",
       "title": "Catchy 5-10 word headline"
     }
   ]
@@ -273,9 +297,9 @@ export async function semanticDeduplication(
 
   console.error(`  🧠 Generating embeddings for ${moments.length} moments...`);
 
-  // Generate embeddings for all quotes
-  const quotes = moments.map(m => m.quote);
-  const embeddings = await generateEmbeddings(quotes, apiKey);
+  // Generate embeddings for all summaries (to detect duplicate exchanges)
+  const summaries = moments.map(m => m.summary);
+  const embeddings = await generateEmbeddings(summaries, apiKey);
 
   if (!embeddings) {
     console.error('  ⚠️ Embedding generation failed, skipping semantic deduplication');
@@ -307,9 +331,9 @@ export async function semanticDeduplication(
 
         dedupDecisions.push({
           kept_index: i,
-          kept_quote: moments[i].quote.slice(0, 100),
+          kept_quote: moments[i].summary.slice(0, 100),
           removed_index: j,
-          removed_quote: moments[j].quote.slice(0, 100),
+          removed_quote: moments[j].summary.slice(0, 100),
           similarity,
           reason: 'semantic_similarity'
         });
@@ -337,9 +361,11 @@ export async function globalReranking(
   console.error(`  🎯 Global reranking of ${moments.length} candidates...`);
 
   // Prepare moment summaries for AI
-  const momentSummaries = moments.map((m, i) =>
-    `${i + 1}. [${m.viral_score || 7.0}] ${m.speaker || 'Unknown'}: "${m.quote.slice(0, 100)}..."`
-  );
+  const momentSummaries = moments.map((m, i) => {
+    const speakers = m.speakers.join(', ');
+    const firstHighlight = m.highlights[0]?.quote.slice(0, 80) || m.summary.slice(0, 80);
+    return `${i + 1}. [${m.viral_score || 7.0}] ${speakers}: "${firstHighlight}..."`;
+  });
 
   const prompt = `You are reviewing ALL candidate moments extracted from a parliamentary session.
 
