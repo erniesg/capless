@@ -90,6 +90,20 @@ WHOLESOME/POSITIVE moments:
 - Pragmatic solutions
 - Inspiring statements
 
+ATTENBOROUGH-WORTHY moments (epic, cinematic observations):
+- Profound observations about human nature/society
+- Poetic descriptions of complex situations
+- Sweeping statements about the future
+- Epic metaphors or analogies
+- Nature documentary-style narration of political theater
+
+SUCK-UP/DEFLECTION moments (comedy gold):
+- MPs praising someone IMMEDIATELY after they were grilled about failures
+- Awkward transitions from serious audit issues to flattery
+- "You're doing such hard work" right after disaster revelations
+- Deflection tactics that are transparently obvious
+- Tone-deaf compliments in wrong context
+
 Return ONLY a JSON object with this structure:
 {
   "moments": [
@@ -98,7 +112,7 @@ Return ONLY a JSON object with this structure:
       "speaker": "Speaker name if identifiable",
       "why_viral": "Why this will go viral (1-2 sentences)",
       "viral_score": 7.0-10.0,
-      "category": "Reality Check/Drama Alert/Wholesome/etc",
+      "category": "Reality Check/Drama Alert/Wholesome/Attenborough/Suck-Up/etc",
       "title": "Catchy 5-10 word headline"
     }
   ]
