@@ -1,7 +1,7 @@
 # INIT.md - Capless AI Initialization Guide
 
 **Last Updated:** 2025-10-21
-**Status:** 3/10 Workers Built | 98/98 Tests Passing
+**Status:** 3/5 Workers Built (60% Complete) | 98/98 Tests Passing
 **Read This First** before touching anything else in this repo.
 
 ---
@@ -10,12 +10,15 @@
 
 **DO NOT CREATE NEW MARKDOWN FILES.**
 
-We have exactly **5 MDs** - that's it:
+We have exactly **4 core MDs** - that's it:
 1. README.md - Quick start & status
-2. INIT.md - This file (concepts)
-3. ARCHITECTURE.md - Technical specs
-4. PERSONAS.md - Voice DNA
-5. IMPLEMENTATION.md - Build guide
+2. ARCHITECTURE.md - Complete technical specs (5 workers, ADRs, deployment)
+3. PERSONAS.md - Voice DNA system
+4. MOMENT_CATEGORIES_V2.md - Content categories aligned with personas
+
+**Historical/deprecated docs** exist but should not be updated:
+- INIT.md (outdated architecture references)
+- IMPLEMENTATION.md (tactical guide for old architecture)
 
 **If you need to document something:** Update one of these files.
 **Why?** Sprawl makes information impossible to find.
@@ -43,36 +46,33 @@ Make civic engagement accessible through entertainment. Political literacy shoul
 
 ## Architecture Overview
 
-### Comprehensive Atomic Services Pipeline
+### 5-Worker Production Pipeline (v3.0)
 
 ```
 Parliamentary Proceedings (Hansard JSON)
           ↓
-    [Ingestion Worker]
-    Parse transcript, extract metadata, generate embeddings
+    [Ingestion Worker] ✅ BUILT
+    Parse transcript, extract metadata
           ↓
-    ┌─────┴─────┬─────────────┐
-    ↓           ↓             ↓
-[Embeddings] [Video Matcher] [Moment Extractor]
-Semantic      YouTube        Find viral
-search        matching       moments
-    ↓           ↓             ↓
-    └─────┬─────┴─────────────┘
+    ┌─────┴─────┬
+    ↓           ↓
+[Video Matcher] [Moments Worker] ✅ BUILT
+YouTube         Viral moment
+matching        extraction +
+                embeddings
+    ↓           ↓
+    └─────┬─────┘
           ↓
-  [Script Generator]
-  4 personas in parallel
+  [Asset Generator] 🚧 TO BUILD
+  Scripts (4 personas) + Audio + Thumbnails
           ↓
-  [Audio Generator]
-  Text-to-speech with voice cloning
-          ↓
-  [Video Compositor]
-  Modal + Remotion rendering
-          ↓
-  [Publisher Worker]
-  Multi-platform distribution
+  [Video Compositor] 🚧 TO BUILD
+  Modal rendering + Publishing + Storage
 ```
 
-**Key Principle:** Every service is **independently deployable** with atomic endpoints. Cloudflare Workflows orchestrates the pipeline, but each worker can be called standalone.
+**Key Principle:** Services are grouped by **domain boundaries** and **operational coupling**, not arbitrary atomization. Each worker is independently deployable.
+
+**Why 5 workers (not 10)?** See [ARCHITECTURE.md](./ARCHITECTURE.md#adr-001) for evidence-based consolidation rationale.
 
 **For detailed technical specs:** See [ARCHITECTURE.md](./ARCHITECTURE.md)
 
@@ -92,7 +92,7 @@ search        matching       moments
 | **Storage** | Cloudflare R2 | Zero egress fees, S3-compatible |
 | **Search** | Vectorize/Pinecone | Semantic search across content |
 
-**Cost:** ~$515/month at 100 videos/day = $0.17/video
+**Cost:** ~$2,182/month at 100 videos/day = $0.73/video (see [ARCHITECTURE.md](./ARCHITECTURE.md#6-cost-analysis))
 
 **For full stack details:** See [ARCHITECTURE.md](./ARCHITECTURE.md)
 
