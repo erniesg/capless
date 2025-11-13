@@ -10,10 +10,24 @@ export interface HansardSection {
   content: string;
   title?: string;
   sectionType?: string;
+  // Add Parliament API fields for metadata
+  startPgNo?: number;
+  endPgNo?: number;
+  questionNo?: string;
+  subTitle?: string;
 }
 
 export interface HansardData {
   takesSectionVOList: HansardSection[];
+  metadata?: {
+    parlimentNO?: number;     // Note: API has typo "parliment"
+    sessionNO?: number;
+    volumeNO?: number;
+    sittingNO?: number;
+    sittingDate?: string;
+    partSessionStr?: string;
+    dateToDisplay?: string;
+  };
 }
 
 export interface Chunk {
@@ -38,6 +52,9 @@ export function chunkBySections(data: HansardData): Chunk[] {
   let currentSectionNums: number[] = [];
   let currentSectionTitles: string[] = [];
   let currentSectionTypes: string[] = [];
+  // NEW: Track page ranges and HTML
+  let currentPageRanges: Array<{section_id: number; start_page?: number; end_page?: number; question_no?: string}> = [];
+  let currentSectionHtml: string[] = [];
 
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
@@ -48,6 +65,14 @@ export function chunkBySections(data: HansardData): Chunk[] {
     const title = section.title || 'N/A';
     const sectionType = section.sectionType || 'N/A';
     const sectionNum = i + 1;
+
+    // NEW: Capture page metadata
+    const pageMetadata = {
+      section_id: sectionNum,
+      start_page: section.startPgNo,
+      end_page: section.endPgNo,
+      question_no: section.questionNo
+    };
 
     if (sectionSize > 80000) {
       // Large section - flush current chunk first
@@ -61,7 +86,9 @@ export function chunkBySections(data: HansardData): Chunk[] {
             section_titles: currentSectionTitles,
             section_types: currentSectionTypes,
             type: 'combined',
-            char_count: currentSize
+            char_count: currentSize,
+            section_page_ranges: currentPageRanges,
+            section_html: currentSectionHtml
           }
         });
         currentChunk = [];
@@ -69,6 +96,8 @@ export function chunkBySections(data: HansardData): Chunk[] {
         currentSectionNums = [];
         currentSectionTitles = [];
         currentSectionTypes = [];
+        currentPageRanges = [];
+        currentSectionHtml = [];
       }
 
       // Add large section as its own chunk
@@ -80,7 +109,9 @@ export function chunkBySections(data: HansardData): Chunk[] {
           section_titles: [title],
           section_types: [sectionType],
           type: 'large',
-          char_count: sectionSize
+          char_count: sectionSize,
+          section_page_ranges: [pageMetadata],
+          section_html: [contentHtml]
         }
       });
 
@@ -96,7 +127,9 @@ export function chunkBySections(data: HansardData): Chunk[] {
             section_titles: currentSectionTitles,
             section_types: currentSectionTypes,
             type: 'combined',
-            char_count: currentSize
+            char_count: currentSize,
+            section_page_ranges: currentPageRanges,
+            section_html: currentSectionHtml
           }
         });
       }
@@ -107,6 +140,8 @@ export function chunkBySections(data: HansardData): Chunk[] {
       currentSectionNums = [sectionNum];
       currentSectionTitles = [title];
       currentSectionTypes = [sectionType];
+      currentPageRanges = [pageMetadata];
+      currentSectionHtml = [contentHtml];
 
     } else {
       // Add to current chunk
@@ -115,6 +150,8 @@ export function chunkBySections(data: HansardData): Chunk[] {
       currentSectionNums.push(sectionNum);
       currentSectionTitles.push(title);
       currentSectionTypes.push(sectionType);
+      currentPageRanges.push(pageMetadata);
+      currentSectionHtml.push(contentHtml);
     }
   }
 
@@ -129,7 +166,9 @@ export function chunkBySections(data: HansardData): Chunk[] {
         section_titles: currentSectionTitles,
         section_types: currentSectionTypes,
         type: 'combined',
-        char_count: currentSize
+        char_count: currentSize,
+        section_page_ranges: currentPageRanges,
+        section_html: currentSectionHtml
       }
     });
   }
@@ -138,25 +177,23 @@ export function chunkBySections(data: HansardData): Chunk[] {
 }
 
 /**
- * Fetch Hansard transcript from Parliament API
+ * Fetch Hansard transcript from R2 storage
  */
-export async function fetchHansard(dateStr: string): Promise<HansardData | null> {
+export async function fetchHansard(dateStr: string, r2Bucket: R2Bucket): Promise<HansardData | null> {
   try {
-    // Convert YYYY-MM-DD to DD-MM-YYYY
-    const [year, month, day] = dateStr.split('-');
-    const apiDate = `${day}-${month}-${year}`;
+    // Hansard files are stored as: hansard/cleaned/{DD-MM-YYYY}.json
+    const r2Key = `hansard/cleaned/${dateStr}.json`;
+    console.error(`📥 Fetching Hansard from R2: ${r2Key}...`);
 
-    const url = `https://sprs.parl.gov.sg/search/getHansardReport?sittingDate=${apiDate}`;
-    console.error(`📥 Fetching Hansard from ${url}...`);
+    const object = await r2Bucket.get(r2Key);
 
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      console.error(`❌ Failed to fetch: ${response.status}`);
+    if (!object) {
+      console.error(`❌ File not found in R2: ${r2Key}`);
       return null;
     }
 
-    const data = await response.json() as HansardData;
+    const content = await object.text();
+    const data = JSON.parse(content) as HansardData;
 
     const sections = data.takesSectionVOList || [];
     if (sections.length === 0) {
@@ -164,11 +201,11 @@ export async function fetchHansard(dateStr: string): Promise<HansardData | null>
       return null;
     }
 
-    console.error(`✅ Fetched Hansard: ${sections.length} sections`);
+    console.error(`✅ Fetched Hansard from R2: ${sections.length} sections`);
     return data;
 
   } catch (error) {
-    console.error(`❌ Error fetching Hansard: ${error}`);
+    console.error(`❌ Error fetching Hansard from R2: ${error}`);
     return null;
   }
 }

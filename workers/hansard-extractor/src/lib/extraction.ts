@@ -8,30 +8,82 @@ export interface Highlight {
   speaker: string;
 }
 
+// NEW: Hansard location metadata for full reconstruction
+export interface HansardLocation {
+  section_id: number;           // Which section in Hansard
+  section_title: string;         // e.g. "Good Samaritan Food Donation Bill"
+  section_type: string;          // e.g. "BP", "Q&A", "PQ"
+  start_page?: number;           // From Parliament API
+  end_page?: number;
+  question_number?: string;      // For Q&A sections
+  section_content_html?: string; // Original HTML for full reconstruction
+}
+
+// NEW: Context around the quote for reconstruction
+export interface QuoteContext {
+  text_before: string;    // 500 chars before quote
+  text_after: string;     // 500 chars after quote
+  paragraph_index?: number;
+  character_offset?: number;
+}
+
+// Enhanced Moment interface with reconstruction metadata
 export interface Moment {
+  // === EXISTING FIELDS (keep for backward compatibility) ===
   summary: string;
   highlights: Highlight[];
   speakers: string[];
   why_viral: string;
   viral_score: number;
   title: string;
+
+  // === LEGACY FIELDS (keep but deprecate) ===
   source_chunk_id?: string;
   source_sections?: number[];
   source_section_titles?: string[];
   chunk_metadata?: ChunkMetadata;
+
+  // === CONSOLIDATION FIELDS ===
   initial_score?: number;
   final_score?: number;
   ranking_reason?: string;
   global_ranking?: number;
+
+  // === NEW: Enhanced Hansard metadata for reconstruction ===
+  hansard_location?: HansardLocation;
+  quote_context?: QuoteContext;
+
+  // === NEW: Session metadata ===
+  date?: string;              // DD-MM-YYYY
+  session_id?: string;        // parliament-YYYY-MM-DD
+  parliament_number?: number; // 14, 15, etc.
+
+  // === YouTube linking (populated by separate worker) ===
+  youtube?: {
+    video_id?: string;
+    timestamp_seconds?: number;
+    shareable_url?: string;
+    match_confidence?: number;
+    match_method?: string;
+  };
 }
 
 export interface ChunkMetadata {
   chunk_id: string;
-  sections: number[];
+  sections: number[];  // Section IDs from Hansard
   section_titles: string[];
   section_types: string[];
   type: 'combined' | 'large';
   char_count: number;
+
+  // NEW: Section page ranges and metadata
+  section_page_ranges?: Array<{
+    section_id: number;
+    start_page?: number;
+    end_page?: number;
+    question_no?: string;
+  }>;
+  section_html?: string[]; // Original HTML for each section
 }
 
 export interface ConsolidationStats {
@@ -219,12 +271,33 @@ ${chunkText}`;
       const momentsData = JSON.parse(result.choices[0].message.content);
       const moments: Moment[] = momentsData.moments || [];
 
-      // Add chunk metadata to each moment
+      // Add chunk metadata to each moment (legacy fields)
       for (const moment of moments) {
         moment.source_chunk_id = chunkMetadata.chunk_id;
         moment.source_sections = chunkMetadata.sections;
         moment.source_section_titles = chunkMetadata.section_titles;
         moment.chunk_metadata = chunkMetadata;
+
+        // NEW: Add enhanced Hansard location metadata
+        const primarySection = chunkMetadata.sections[0]; // Use first section as primary
+        const pageRange = chunkMetadata.section_page_ranges?.[0];
+        const sectionHtml = chunkMetadata.section_html?.[0];
+
+        if (primarySection) {
+          moment.hansard_location = {
+            section_id: primarySection,
+            section_title: chunkMetadata.section_titles[0] || '',
+            section_type: chunkMetadata.section_types[0] || '',
+            start_page: pageRange?.start_page,
+            end_page: pageRange?.end_page,
+            question_number: pageRange?.question_no,
+            section_content_html: sectionHtml
+          };
+        }
+
+        // NEW: Extract quote context
+        const firstQuote = moment.highlights[0]?.quote || '';
+        moment.quote_context = extractQuoteContext(firstQuote, chunkText);
       }
 
       return moments;
@@ -517,6 +590,30 @@ Return all ${moments.length} moments in ranked order.`;
   }
 
   return moments;
+}
+
+/**
+ * Extract context around a quote for reconstruction
+ */
+function extractQuoteContext(quote: string, fullText: string): QuoteContext {
+  const quoteIndex = fullText.indexOf(quote);
+
+  if (quoteIndex === -1) {
+    // Quote not found exactly, return empty context
+    return {
+      text_before: '',
+      text_after: ''
+    };
+  }
+
+  const beforeStart = Math.max(0, quoteIndex - 500);
+  const afterEnd = Math.min(fullText.length, quoteIndex + quote.length + 500);
+
+  return {
+    text_before: fullText.slice(beforeStart, quoteIndex),
+    text_after: fullText.slice(quoteIndex + quote.length, afterEnd),
+    character_offset: quoteIndex
+  };
 }
 
 /**

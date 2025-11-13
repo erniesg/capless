@@ -3,7 +3,7 @@
  * Run with: npx tsx test-local.ts
  */
 
-import { fetchHansard, chunkBySections } from './src/lib/chunking';
+import { chunkBySections, type HansardData } from './src/lib/chunking';
 import {
   extractMomentsWithRetry,
   semanticDeduplication,
@@ -13,6 +13,40 @@ import {
 } from './src/lib/extraction';
 import { readFileSync } from 'fs';
 import { writeFileSync } from 'fs';
+import { execSync } from 'child_process';
+
+/**
+ * Fetch Hansard from R2 using wrangler CLI (for local testing)
+ */
+async function fetchHansardFromR2(date: string): Promise<HansardData | null> {
+  try {
+    const r2Key = `hansard/cleaned/${date}.json`;
+    const tmpFile = `/tmp/hansard-${date}.json`;
+
+    console.error(`📥 Fetching from R2: ${r2Key}...`);
+
+    // Use wrangler to download file from R2
+    execSync(
+      `npx wrangler r2 object get capless-preview/${r2Key} --file ${tmpFile}`,
+      { stdio: 'ignore' }
+    );
+
+    const content = readFileSync(tmpFile, 'utf-8');
+    const data = JSON.parse(content) as HansardData;
+
+    const sections = data.takesSectionVOList || [];
+    if (sections.length === 0) {
+      console.error('❌ No sections found in Hansard');
+      return null;
+    }
+
+    console.error(`✅ Fetched Hansard from R2: ${sections.length} sections`);
+    return data;
+  } catch (error) {
+    console.error(`❌ Error fetching from R2: ${error}`);
+    return null;
+  }
+}
 
 async function testExtraction(date: string) {
   console.error(`\n${'='.repeat(60)}`);
@@ -30,10 +64,10 @@ async function testExtraction(date: string) {
   }
   const apiKey = apiKeyMatch[1].trim();
 
-  // Fetch Hansard data
-  const hansardData = await fetchHansard(date);
+  // Fetch Hansard data from R2
+  const hansardData = await fetchHansardFromR2(date);
   if (!hansardData) {
-    console.error('❌ Failed to fetch Hansard');
+    console.error('❌ Failed to fetch Hansard from R2');
     process.exit(1);
   }
 

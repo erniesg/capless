@@ -122,10 +122,12 @@ export default {
 
         console.log(`📅 Processing ${date} (attempt ${retry_count + 1})...`);
 
-        // Check if already processed
-        const existing = await env.CAPLESS_R2.get(`hansard/moments/${date}.json`);
-        if (existing) {
-          console.log(`⏭️  Skipping ${date} (already exists)`);
+        // Check if already processed (check BOTH paths for backward compat)
+        const newPath = await env.CAPLESS_R2.get(`hansard/moments/${date}.json`);
+        const oldPath = await env.CAPLESS_R2.get(`moment-extraction/hansard-${date}.json`);
+
+        if (newPath || oldPath) {
+          console.log(`⏭️  Skipping ${date} (already exists in ${newPath ? 'new' : 'old'} path)`);
           message.ack();
           continue;
         }
@@ -185,6 +187,8 @@ export default {
   }
 };
 
+// REMOVED: No longer needed, get from API metadata
+
 /**
  * Extract moments from a single session
  */
@@ -197,12 +201,24 @@ async function extractSession(
   console.log(`Date: ${date}`);
   console.log(`${'='.repeat(60)}\n`);
 
-  // Fetch Hansard data
-  const hansardData = await fetchHansard(date);
+  // Fetch Hansard data from R2 to get parliament metadata
+  const hansardData = await fetchHansard(date, env.CAPLESS_R2);
   if (!hansardData) {
-    console.error('❌ Failed to fetch Hansard');
+    console.error('❌ Failed to fetch Hansard from R2');
     return null;
   }
+
+  // Extract parliament info from API metadata
+  const parliamentNumber = hansardData.metadata?.parlimentNO || 0; // Note: API typo
+  const sessionNumber = hansardData.metadata?.sessionNO;
+  const sittingNumber = hansardData.metadata?.sittingNO;
+  const dateDisplay = hansardData.metadata?.dateToDisplay;
+
+  // Convert DD-MM-YYYY to session_id format (parliament-YYYY-MM-DD)
+  const [dd, mm, yyyy] = date.split('-');
+  const sessionId = `parliament-${yyyy}-${mm}-${dd}`;
+
+  console.log(`Session: ${sessionId}, Parliament: ${parliamentNumber}, Session: ${sessionNumber}, Sitting: ${sittingNumber}`);
 
   // Calculate total length
   const sections = hansardData.takesSectionVOList || [];
@@ -278,6 +294,14 @@ async function extractSession(
 
   // Global reranking
   const finalMoments = await globalReranking(semanticallyUnique, env.OPENAI_API_KEY);
+
+  // NEW: Add session metadata to all moments (from API metadata)
+  for (const moment of finalMoments) {
+    moment.date = date;
+    moment.session_id = sessionId;
+    moment.parliament_number = parliamentNumber;  // From API metadata.parlimentNO
+    // youtube field stays undefined (populated by separate worker)
+  }
 
   // Consolidation stats
   const consolidationStats: ConsolidationStats = {

@@ -1,9 +1,56 @@
 # Multi-Source Parliament Data Architecture
 
-**Version:** 1.0
-**Date:** 2025-10-25
-**Status:** Design Specification
+**Version:** 2.0 (UPDATED WITH ACTUAL R2 STATE)
+**Date:** 2025-11-13
+**Status:** Design + Current State Analysis
 **Purpose:** Unified architecture for tracking Hansard sessions, YouTube videos, transcripts, and processed moments
+
+---
+
+## CURRENT STATE (ACTUAL R2 DATA)
+
+**capless-preview Bucket Inventory:**
+- ✅ **1,726 Hansard files** (raw + cleaned) covering 1955-2025
+- ✅ **595 moment extractions** (old format, 1955-2025)
+- ✅ **30 YouTube transcripts** (.vtt files for 2024-2025 sessions)
+- ✅ **32 YouTube videos** (full MP4s)
+
+**CRITICAL GAP - 23 Recent Sessions Missing Extractions:**
+```
+2024-08-06, 2024-08-07, 2024-09-09, 2024-09-10, 2024-10-14,
+2024-11-11, 2024-11-12, 2024-11-13, 2025-01-07, 2025-01-08,
+2025-02-04, 2025-02-05, 2025-02-18, 2025-03-03, 2025-03-04,
+2025-03-05, 2025-03-06, 2025-03-07, 2025-03-10, 2025-04-08,
+2025-05-09, 2025-09-05, 2025-10-15
+```
+
+These sessions have **Hansard + YouTube transcripts** but **NO moment extractions**.
+
+**OLD EXTRACTIONS METADATA GAP:**
+The 595 existing extractions use old format (`moment-extraction/hansard-*.json`):
+```json
+{
+  "date": "31-12-1965",
+  "moments": [{
+    "quote": "...",
+    "speaker": "...",
+    "viral_score": 9,
+    "chunk_metadata": {"type": "complete"}  // ❌ Not enough!
+  }]
+}
+```
+
+Missing metadata for full reconstruction:
+- ❌ No section_id, page numbers (startPgNo/endPgNo)
+- ❌ No context (text before/after quote)
+- ❌ No YouTube timestamp linking
+- ❌ No parliament metadata (14th vs 15th)
+- ❌ No section HTML for full transcript reconstruction
+
+**IMMEDIATE NEXT STEPS:**
+1. **Deploy hansard-extractor worker** → Extract 23 recent sessions with enhanced metadata
+2. **Enhance metadata schema** → Add section_id, pages, context, YouTube linking
+3. **(Optional) Re-run old extractions** → Upgrade 595 old extractions to new format
 
 ---
 
@@ -19,7 +66,7 @@ This architecture provides a scalable, cost-effective system for correlating fou
 - **Primary Storage:** Cloudflare D1 (SQLite) for structured relational data
 - **File Storage:** Cloudflare R2 for raw JSON, audio, video assets
 - **Cache Layer:** KV for fast lookups and rate limiting
-- **Cost:** $0/month on Cloudflare free tier (up to ~2000 sessions)
+- **Cost:** $0/month on Cloudflare free tier (current: 1,726 sessions)
 - **Scale:** Supports 70 years of parliament data (1955-2025)
 
 ---
