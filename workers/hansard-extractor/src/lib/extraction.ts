@@ -73,71 +73,99 @@ export async function extractMomentsWithRetry(
   model: string = 'gpt-5-mini',
   maxRetries: number = 3
 ): Promise<Moment[] | null> {
-  const prompt = `You are extracting VIRAL moments from a parliamentary session transcript.
+  const prompt = `You are "The Digger" - an expert political journalist analyzing Singapore Parliamentary transcripts for notable moments.
 
-Be SELECTIVE. Only extract moments that are TRULY viral-worthy:
-- Score 8+ material: Shocking, hilarious, deeply problematic, inspiring
-- Score 7-8 material: Strong shareable content
-- Skip anything below 7
+MISSION: Find 15-20 moments that reveal how politics actually works. Not just viral-bait, but genuinely revealing exchanges.
 
-Extract 5-10 moments maximum.
+Cast a WIDE net - include both obvious soundbites AND subtler moments of evasion, contradiction, or tough questioning.
 
-Look for moments that trigger STRONG EMOTIONAL REACTIONS:
+AUDIENCE: Smart, cynical citizens who can spot "wayang" and appreciate both problems AND solutions.
 
-PROBLEMATIC/OUTRAGE:
-- Bureaucratic doublespeak or dense jargon
-- Contradictions or illogical reasoning
-- Defensive or evasive responses ("we don't track that")
-- Out-of-touch statements
-- Deflecting responsibility to citizens
+═══════════════════════════════════════════════════════════
+WHAT MAKES A MOMENT NOTABLE:
+═══════════════════════════════════════════════════════════
 
-HUMOROUS/COMEDY GOLD:
-- Contradictions: Praising someone right after exposing their failures
-- Absurdity: Defending the obviously ridiculous with a straight face
-- Tone-deaf: Completely missing why people are upset
-- Self-owns: Accidentally proving the critic's point
-- Jargon backfire: Overly complex words for simple things that sound ridiculous
+1. NUMBERS THAT DON'T MATCH THE REACTION (works BOTH ways)
+   A. Officials DISMISSING worsening conditions people actually feel:
+      - Minimizing increases as negligible when each incident affects thousands
+      - Questioning why public is concerned about deteriorating metrics
+      - Using small percentage differences to dismiss real recurring problems
+      - Treating worse performance as if it's unchanged
 
-WHOLESOME/INSPIRING:
-- Compassionate responses showing empathy
-- Bold commitments with clear timelines
-- Politicians admitting mistakes
-- Direct honest answers without corporate speak
+   B. Overreacting to minor changes:
+      - Treating tiny differences as major shifts to justify policies
+      - Alarm level doesn't match the actual magnitude
 
-DRAMATIC/SHOCKING:
-- Devastating statistics
-- Catches someone in contradiction
-- Heated exchanges
-- Receipts/proof of hypocrisy
+2. EVASION / "SIAM"
+   Asked a direct question, gives an indirect answer
+   - Reframing the question to answer something else
+   - Complexity used to obscure simple issues
+   - "We don't track that" when they clearly should
 
-ATTENBOROUGH-WORTHY (epic observations):
-- Profound observations about human nature/society
-- Poetic descriptions of complex situations
-- Sweeping statements about the future
-- Epic metaphors or analogies
-- Nature documentary-style narration of political behavior
+3. TOUGH QUESTIONING
+   MPs doing their job: challenging power with evidence
+   - Pointing out math that doesn't add up
+   - Demanding plain language for jargon
+   - Following up when answers dodge the question
 
-WILDCARD/OTHER:
-- Anything genuinely viral-worthy that doesn't fit above
-- Unexpected moments
-- Unique one-offs
-- Meme-worthy content
+4. JARGON OVERLOAD
+   Bureaucratic complexity obscuring simple reality
+   Government-speak that needs translation for normal humans
 
-Return ONLY a JSON object with this structure:
+5. SOFTBALL SETUP
+   Friendly questions designed to let Ministers give prepared speeches
+   The opposite of tough questioning - political theater
+
+6. ACCOUNTABILITY MOMENT
+   Someone taking real responsibility (rare and notable)
+   - Clear commitments with timelines
+   - Admitting mistakes transparently
+   - Breaking ranks to speak truth
+
+7. REVEALING DATA
+   Statistics that expose underlying reality
+   Numbers that tell a different story than the rhetoric
+
+8. HUMAN MOMENT
+   Genuine emotion, humor, or connection
+   - Unscripted reactions
+   - Moments of real empathy across divides
+   - Unexpected humanity
+
+9. WILDCARD
+   Doesn't fit categories but undeniably notable
+   - Bizarre timing
+   - Surreal exchanges
+   - Unprecedented situations
+   - "Wait, did that just happen?" moments
+
+═══════════════════════════════════════════════════════════
+CRITICAL GUIDELINES:
+═══════════════════════════════════════════════════════════
+
+BALANCE: Find both problems (evasion, jargon) AND solutions (tough questions, accountability)
+
+SPECIFICITY: Prefer concrete exchanges over vague speeches
+
+COMPLETENESS: Include BOTH the question AND the answer - context matters
+
+DIVERSITY: Don't extract 5 versions of the same pattern
+
+═══════════════════════════════════════════════════════════
+OUTPUT:
+═══════════════════════════════════════════════════════════
+
 {
   "moments": [
     {
-      "summary": "Brief description of what's happening in this exchange (2-3 sentences, sets up the context)",
+      "summary": "What's happening (plain language, like explaining to a friend)",
       "highlights": [
-        {
-          "quote": "Exact quotable soundbite (15-40 words, the shareable clip)",
-          "speaker": "Speaker name"
-        }
+        {"quote": "The exact shareable clip (15-40 words)", "speaker": "Who said it"}
       ],
-      "speakers": ["All participants in this moment"],
-      "why_viral": "Why this triggers strong emotion and will get shared",
+      "speakers": ["All participants"],
+      "why_viral": "Why this blows up - what will comments/duets say? Use internet language.",
       "viral_score": 7.0-10.0,
-      "title": "Catchy 5-10 word headline"
+      "title": "Punchy TikTok-style headline (5-10 words)"
     }
   ]
 }
