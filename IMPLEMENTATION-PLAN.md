@@ -121,24 +121,25 @@ const sittingNumber = hansardData.metadata?.sittingNO;
 
 ## Queue Resumability & Path Management
 
-### ✅ Queue is Smart - Skips Already Extracted
+### ✅ Queue Extracts ALL Sessions Fresh
 
-**workers/hansard-extractor/src/index.ts:125-133**
+**workers/hansard-extractor/src/index.ts:125-132**
 ```typescript
-// Check if already processed (check BOTH paths for backward compat)
+// Check if already processed (ONLY check new path - we're re-extracting ALL sessions)
 const newPath = await env.CAPLESS_R2.get(`hansard/moments/${date}.json`);
-const oldPath = await env.CAPLESS_R2.get(`moment-extraction/hansard-${date}.json`);
 
-if (newPath || oldPath) {
-  console.log(`⏭️  Skipping ${date} (already exists)`);
+if (newPath) {
+  console.log(`⏭️  Skipping ${date} (already exists in new path)`);
   message.ack();
   continue;
 }
 ```
 
 **What this means:**
-- ✅ Safe to queue ALL 1,726 dates - won't re-extract existing 595
-- ✅ Resume from failures - just requeue and it skips completed
+- ✅ Extracts ALL 1,726 sessions with NEW enhanced format
+- ✅ Old 595 extractions (`moment-extraction/hansard-*.json`) kept for reference
+- ✅ New extractions saved to `hansard/moments/*.json`
+- ✅ Resume from failures - just requeue and it skips completed NEW extractions
 - ✅ Idempotent - can run multiple times safely
 
 ### Storage Path Strategy
@@ -147,15 +148,15 @@ if (newPath || oldPath) {
 - Old extractions: `moment-extraction/hansard-{DD-MM-YYYY}.json` (595 files)
 - New path: `hansard/moments/{DD-MM-YYYY}.json` (empty, worker writes here)
 
-**Decision: Keep old extractions in place, new extractions use new path**
+**Decision: Keep old extractions in place, generate ALL 1,726 sessions fresh**
 
-**Why not archive?**
-- Old extractions still useful (have moments, just missing metadata)
-- Can upgrade them later if needed
-- Worker checks both paths, so no collision
-- Separate paths = clear version separation
+**Strategy:**
+- Old extractions stay at `moment-extraction/hansard-*.json` (595 files - reference only)
+- New extractions go to `hansard/moments/*.json` (ALL 1,726 files with enhanced metadata)
+- Worker ONLY checks new path, so it extracts ALL sessions fresh
+- Separate paths = old for reference, new for production use
 
-**No migration needed** - just deploy and extract missing sessions
+**No archiving needed** - just deploy and extract ALL 1,726 sessions
 
 ---
 
@@ -315,17 +316,7 @@ npx tsx test-local.ts 2024-08-06
 }
 ```
 
-### Step 2: Archive Old Extractions (1 hour)
-
-```bash
-# Create archive script
-python3 scripts/archive-old-extractions.py
-
-# Output:
-# ✅ Archived 595 old extractions to moment-extraction/archive-v1/
-```
-
-### Step 3: Deploy Enhanced Worker (30min)
+### Step 2: Deploy Enhanced Worker (30min)
 
 ```bash
 cd workers/hansard-extractor
@@ -341,28 +332,32 @@ wrangler queues create hansard-extraction-dlq
 npm run deploy
 ```
 
-### Step 4: Extract Recent Sessions (2-3 hours processing)
+### Step 3: Extract ALL 1,726 Sessions (processing time varies)
 
 ```bash
-# Queue 23 recent sessions
+# Option 1: Queue ALL dates at once (worker skips if new path exists)
+# You'll need to generate list of all 1,726 dates from R2
 curl -X POST https://hansard-extractor.erniesg.workers.dev/extract-all \
   -H "Content-Type: application/json" \
   -d '{
-    "dates": [
-      "06-08-2024", "07-08-2024", "09-09-2024", "10-09-2024",
-      "14-10-2024", "11-11-2024", "12-11-2024", "13-11-2024",
-      "07-01-2025", "08-01-2025", "04-02-2025", "05-02-2025",
-      "18-02-2025", "03-03-2025", "04-03-2025", "05-03-2025",
-      "06-03-2025", "07-03-2025", "10-03-2025", "08-04-2025",
-      "09-05-2025", "05-09-2025", "15-10-2025"
-    ]
+    "dates": [/* all 1,726 dates from hansard/cleaned/ in R2 */]
+  }'
+
+# Option 2: Test with a few dates first
+curl -X POST https://hansard-extractor.erniesg.workers.dev/extract-all \
+  -H "Content-Type: application/json" \
+  -d '{
+    "dates": ["06-08-2024", "07-08-2024", "22-09-2025"]
   }'
 
 # Monitor progress
 curl https://hansard-extractor.erniesg.workers.dev/status
+
+# Expected: 1,726 sessions extracted to hansard/moments/*.json
+# Old 595 extractions remain at moment-extraction/hansard-*.json for reference
 ```
 
-### Step 5: Build YouTube Matcher Worker (4-6 hours)
+### Step 4: Build YouTube Matcher Worker (4-6 hours)
 
 ```bash
 # Create new worker
@@ -381,7 +376,7 @@ npm install --save-dev wrangler typescript @cloudflare/workers-types
 wrangler deploy
 ```
 
-### Step 6: Match YouTube Timestamps (1-2 hours)
+### Step 5: Match YouTube Timestamps (1-2 hours)
 
 ```bash
 # Process all 23 sessions with YouTube videos
@@ -480,16 +475,16 @@ If issues arise:
 - [ ] Local test produces enhanced format
 - [ ] All required fields populated
 
-✅ **Old Extractions:**
-- [ ] 595 files moved to archive-v1/
-- [ ] Archive accessible for reference
-- [ ] Main folder ready for new extractions
+✅ **Old Extractions (Reference):**
+- [x] 595 files kept at `moment-extraction/hansard-*.json`
+- [x] Accessible for comparison and reference
+- [x] Worker ignores old path
 
-✅ **New Extractions:**
-- [ ] 23 recent sessions extracted
-- [ ] All have hansard_location metadata
-- [ ] All have quote_context
-- [ ] All have session metadata
+✅ **New Extractions (ALL 1,726 Sessions):**
+- [ ] 1,726 sessions extracted to `hansard/moments/*.json`
+- [ ] All have hansard_location metadata (section_id, pages, HTML)
+- [ ] All have quote_context (±500 chars around quote)
+- [ ] All have session metadata (parliament_number, session_id, date)
 
 ✅ **YouTube Matching:**
 - [ ] Matcher worker deployed

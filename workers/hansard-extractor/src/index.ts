@@ -122,12 +122,11 @@ export default {
 
         console.log(`📅 Processing ${date} (attempt ${retry_count + 1})...`);
 
-        // Check if already processed (check BOTH paths for backward compat)
+        // Check if already processed (ONLY check new path - we're re-extracting ALL sessions)
         const newPath = await env.CAPLESS_R2.get(`hansard/moments/${date}.json`);
-        const oldPath = await env.CAPLESS_R2.get(`moment-extraction/hansard-${date}.json`);
 
-        if (newPath || oldPath) {
-          console.log(`⏭️  Skipping ${date} (already exists in ${newPath ? 'new' : 'old'} path)`);
+        if (newPath) {
+          console.log(`⏭️  Skipping ${date} (already exists in new path)`);
           message.ack();
           continue;
         }

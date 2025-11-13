@@ -10,7 +10,7 @@ vars = { ENVIRONMENT = "production" }
 # R2 Bucket binding
 [[r2_buckets]]
 binding = "CAPLESS_R2"
-bucket_name = "capless"
+bucket_name = "capless-preview"
 
 # Queue binding
 [[queues.producers]]
