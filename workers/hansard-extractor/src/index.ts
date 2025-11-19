@@ -266,10 +266,10 @@ async function extractSession(
       console.error(`  ⚠️  No moments extracted`);
     }
 
-    // Rate limiting between chunks
+    // Brief pause between chunks (OpenAI API handles rate limiting internally)
     if (i < chunks.length - 1) {
-      console.error(`  ⏳ Waiting 2s before next chunk...`);
-      await sleep(2000);
+      console.error(`  ⏳ Waiting 0.5s before next chunk...`);
+      await sleep(500);
     }
 
     console.error('');

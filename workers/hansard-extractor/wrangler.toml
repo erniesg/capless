@@ -19,7 +19,7 @@ queue = "hansard-extraction-queue"
 
 [[queues.consumers]]
 queue = "hansard-extraction-queue"
-max_batch_size = 10
+max_batch_size = 1
 max_batch_timeout = 30
 max_retries = 3
 dead_letter_queue = "hansard-extraction-dlq"
@@ -39,4 +39,4 @@ new_classes = ["Checkpoint"]
 
 # Limits
 [limits]
-cpu_ms = 30000
+cpu_ms = 300000  # Maximum allowed by Cloudflare
