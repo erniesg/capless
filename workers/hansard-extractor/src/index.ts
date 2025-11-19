@@ -109,6 +109,29 @@ export default {
       return status;
     }
 
+    // List available raw Hansard files (with pagination)
+    if (url.pathname === '/list-raw') {
+      const allDates: string[] = [];
+      let cursor: string | undefined;
+
+      do {
+        const listed = await env.CAPLESS_R2.list({
+          prefix: 'hansard/raw/',
+          cursor
+        });
+
+        const dates = listed.objects
+          .map(obj => obj.key.match(/hansard\/raw\/([0-9]{2}-[0-9]{2}-[0-9]{4})\.json/)?.[1])
+          .filter(Boolean) as string[];
+
+        allDates.push(...dates);
+        cursor = listed.truncated ? listed.cursor : undefined;
+      } while (cursor);
+
+      allDates.sort();
+      return Response.json({ dates: allDates, count: allDates.length });
+    }
+
     return new Response('Not Found', { status: 404 });
   },
 
@@ -116,6 +139,8 @@ export default {
    * Queue consumer - processes individual session extractions
    */
   async queue(batch: MessageBatch<SessionJob>, env: Env): Promise<void> {
+    console.log(`🔥 QUEUE CONSUMER TRIGGERED! Batch size: ${batch.messages.length}`);
+
     for (const message of batch.messages) {
       try {
         const { date, retry_count = 0 } = message.body;
