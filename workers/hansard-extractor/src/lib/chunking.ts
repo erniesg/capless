@@ -181,8 +181,8 @@ export function chunkBySections(data: HansardData): Chunk[] {
  */
 export async function fetchHansard(dateStr: string, r2Bucket: R2Bucket): Promise<HansardData | null> {
   try {
-    // Hansard files are stored as: hansard/raw/{DD-MM-YYYY}.json (Parliament API format)
-    const r2Key = `hansard/raw/${dateStr}.json`;
+    // Hansard files are stored as: hansard/cleaned/{DD-MM-YYYY}.json (structured with takesSectionVOList)
+    const r2Key = `hansard/cleaned/${dateStr}.json`;
     console.error(`📥 Fetching Hansard from R2: ${r2Key}...`);
 
     const object = await r2Bucket.get(r2Key);

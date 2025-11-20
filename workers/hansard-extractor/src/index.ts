@@ -109,27 +109,39 @@ export default {
       return status;
     }
 
-    // List available raw Hansard files (with pagination)
+    // List available cleaned Hansard files (with pagination and sizes)
     if (url.pathname === '/list-raw') {
-      const allDates: string[] = [];
+      const allFiles: Array<{date: string; size: number}> = [];
       let cursor: string | undefined;
 
       do {
         const listed = await env.CAPLESS_R2.list({
-          prefix: 'hansard/raw/',
+          prefix: 'hansard/cleaned/',
           cursor
         });
 
-        const dates = listed.objects
-          .map(obj => obj.key.match(/hansard\/raw\/([0-9]{2}-[0-9]{2}-[0-9]{4})\.json/)?.[1])
-          .filter(Boolean) as string[];
+        for (const obj of listed.objects) {
+          const dateMatch = obj.key.match(/hansard\/cleaned\/([0-9]{2}-[0-9]{2}-[0-9]{4})\.json/);
+          if (dateMatch) {
+            allFiles.push({
+              date: dateMatch[1],
+              size: obj.size
+            });
+          }
+        }
 
-        allDates.push(...dates);
         cursor = listed.truncated ? listed.cursor : undefined;
       } while (cursor);
 
-      allDates.sort();
-      return Response.json({ dates: allDates, count: allDates.length });
+      // Sort by size (smallest first)
+      allFiles.sort((a, b) => a.size - b.size);
+
+      const dates = allFiles.map(f => f.date);
+      return Response.json({
+        dates,
+        count: dates.length,
+        files: allFiles.slice(0, 100) // Return first 100 with sizes
+      });
     }
 
     return new Response('Not Found', { status: 404 });
