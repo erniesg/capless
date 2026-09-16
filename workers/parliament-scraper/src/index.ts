@@ -147,9 +147,86 @@ async function saveToR2(r2: R2Bucket, date: string, data: any): Promise<void> {
 }
 
 /**
+ * Check for new Hansard sessions since last scraped date and enqueue them.
+ * Shared by /check-today HTTP endpoint and scheduled() cron handler.
+ */
+async function checkForNewSessions(env: Env): Promise<{ from: string; to: string; enqueued: number }> {
+  // Find the latest date in R2 with pagination
+  let allDates: string[] = [];
+  let cursor: string | undefined = undefined;
+
+  do {
+    const list = await env.R2.list({
+      prefix: 'hansard/raw/',
+      limit: 1000,
+      cursor: cursor,
+    });
+
+    allDates.push(...list.objects.map(obj =>
+      obj.key.replace('hansard/raw/', '').replace('.json', '')
+    ));
+
+    cursor = list.truncated ? list.cursor : undefined;
+  } while (cursor);
+
+  let startDate: Date;
+  if (allDates.length > 0) {
+    const sortedDates = allDates.sort((a, b) => {
+      const [dayA, monthA, yearA] = a.split('-').map(Number);
+      const [dayB, monthB, yearB] = b.split('-').map(Number);
+      const dateA = new Date(yearA, monthA - 1, dayA);
+      const dateB = new Date(yearB, monthB - 1, dayB);
+      return dateB.getTime() - dateA.getTime();
+    });
+    const latestDateStr = sortedDates[0];
+
+    const [day, month, year] = latestDateStr.split('-').map(Number);
+    startDate = new Date(year, month - 1, day);
+    startDate.setDate(startDate.getDate() + 1); // Start from next day
+  } else {
+    startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+  }
+
+  const today = new Date();
+  const datesToCheck = generateDateRange(startDate, today);
+
+  if (datesToCheck.length === 0) {
+    return { from: '', to: '', enqueued: 0 };
+  }
+
+  console.log(`[CheckNew] Checking ${datesToCheck.length} dates from ${datesToCheck[0]} to ${datesToCheck[datesToCheck.length - 1]}`);
+
+  const messages = datesToCheck.map(date => ({
+    body: { date, attempt: 0 } as DateMessage
+  }));
+
+  for (let i = 0; i < messages.length; i += 100) {
+    const batch = messages.slice(i, i + 100);
+    await env.DATES_QUEUE.sendBatch(batch);
+  }
+
+  return {
+    from: datesToCheck[0],
+    to: datesToCheck[datesToCheck.length - 1],
+    enqueued: datesToCheck.length,
+  };
+}
+
+/**
  * Main worker handler
  */
 export default {
+  /**
+   * Cron handler — runs daily at 6am SGT (22:00 UTC)
+   * Checks parliament API for any newly published Hansard transcripts.
+   */
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    console.log(`[Cron] Triggered at ${new Date().toISOString()}`);
+    const result = await checkForNewSessions(env);
+    console.log(`[Cron] Enqueued ${result.enqueued} dates (${result.from} → ${result.to})`);
+  },
+
   /**
    * HTTP endpoint to trigger scraping
    */
@@ -333,74 +410,16 @@ export default {
 
       // GET /check-today - Check all dates from last scraped to today
       if (url.pathname === '/check-today' && request.method === 'GET') {
-        // Find the latest date in R2 with pagination
-        let allDates: string[] = [];
-        let cursor: string | undefined = undefined;
-
-        do {
-          const list = await env.R2.list({
-            prefix: 'hansard/raw/',
-            limit: 1000,
-            cursor: cursor,
-          });
-
-          allDates.push(...list.objects.map(obj =>
-            obj.key.replace('hansard/raw/', '').replace('.json', '')
-          ));
-
-          cursor = list.truncated ? list.cursor : undefined;
-        } while (cursor);
-
-        let startDate: Date;
-        if (allDates.length > 0) {
-          // Get latest scraped date from ALL dates
-          const sortedDates = allDates.sort((a, b) => {
-            const [dayA, monthA, yearA] = a.split('-').map(Number);
-            const [dayB, monthB, yearB] = b.split('-').map(Number);
-            const dateA = new Date(yearA, monthA - 1, dayA);
-            const dateB = new Date(yearB, monthB - 1, dayB);
-            return dateB.getTime() - dateA.getTime();
-          });
-          const latestDateStr = sortedDates[0];
-
-          const [day, month, year] = latestDateStr.split('-').map(Number);
-          startDate = new Date(year, month - 1, day);
-          startDate.setDate(startDate.getDate() + 1); // Start from next day
-        } else {
-          // No data yet, check last 7 days
-          startDate = new Date();
-          startDate.setDate(startDate.getDate() - 7);
-        }
-
-        const today = new Date();
-        const datesToCheck = generateDateRange(startDate, today);
-
-        console.log(`[CheckToday] Checking ${datesToCheck.length} dates from ${datesToCheck[0]} to ${datesToCheck[datesToCheck.length - 1]}`);
-
-        // Enqueue all dates since last scrape
-        const messages = datesToCheck.map(date => ({
-          body: {
-            date,
-            attempt: 0,
-          } as DateMessage
-        }));
-
-        if (messages.length > 0) {
-          // Send in batches of 100
-          for (let i = 0; i < messages.length; i += 100) {
-            const batch = messages.slice(i, i + 100);
-            await env.DATES_QUEUE.sendBatch(batch);
-          }
-        }
+        const result = await checkForNewSessions(env);
 
         return new Response(
           JSON.stringify({
             message: 'Daily check started',
-            date_range: datesToCheck.length > 0 ? {
-              from: datesToCheck[0],
-              to: datesToCheck[datesToCheck.length - 1]
+            date_range: result.enqueued > 0 ? {
+              from: result.from,
+              to: result.to,
             } : null,
-            enqueued: datesToCheck.length,
+            enqueued: result.enqueued,
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

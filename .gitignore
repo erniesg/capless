@@ -40,9 +40,18 @@ yarn-error.log*
 .dev.vars
 output/
 test-outputs/
+/tmp/
 *.mp4
 *.mp3
 *.json3
+*.vtt
+*.log
+
+# Test artifacts
+*-test.json
+*-moments-*.json
+*-raw.json
+*-transcript.txt
 
 # YouTube transcripts (temporary - uploaded to R2)
 youtube-transcripts/
