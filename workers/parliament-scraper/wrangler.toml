@@ -26,10 +26,12 @@ max_batch_timeout = 60  # Wait up to 60 seconds for batch
 max_retries = 3  # Retry failed dates 3 times
 dead_letter_queue = "parliament-dates-dlq"
 
-# Daily cron triggers for checking new Hansard reports
-# Runs at 12mn, 8am, 12noon Singapore time (UTC+8)
+# Daily cron trigger for checking new Hansard reports
+# Once daily at 6am SGT (22:00 UTC previous day)
+# Hansard transcripts have days-to-weeks publication lag, so 1x/day is plenty.
+# Cost: ~1 Worker invocation + 1-30 queue messages (calendar days since last scrape).
 [triggers]
-crons = ["0 16 * * *", "0 0 * * *", "0 4 * * *"]  # 12mn, 8am, 12noon SGT in UTC
+crons = ["0 22 * * *"]  # 6am SGT daily
 
 [env.development]
 name = "capless-parliament-scraper-dev"
